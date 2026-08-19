@@ -5,37 +5,43 @@ import { Lightbox } from "@/components/Lightbox";
 
 const screenshots = [
     {
-        src: "/screenshots/desktop/dag-designer.svg",
+        light: "/screenshots/desktop/dag-designer-light.png",
+        dark: "/screenshots/desktop/dag-designer-dark.png",
         alt: "Querial — DAG designer",
         caption: "DAG designer",
         description: "Draft graph, palette, auto-layout, cycle checks",
     },
     {
-        src: "/screenshots/desktop/sql-editor.svg",
+        light: "/screenshots/desktop/sql-editor-light.png",
+        dark: "/screenshots/desktop/sql-editor-dark.png",
         alt: "Querial — SQL workspace",
         caption: "SQL workspace",
         description: "Monaco, schema cache, Development-only for Developers",
     },
     {
-        src: "/screenshots/desktop/run-visualizer.svg",
+        light: "/screenshots/desktop/run-visualizer-light.png",
+        dark: "/screenshots/desktop/run-visualizer-dark.png",
         alt: "Querial — Run visualizer",
         caption: "Run visualizer",
         description: "Live status on the published graph",
     },
     {
-        src: "/screenshots/desktop/deployments.svg",
+        light: "/screenshots/desktop/deployments-light.png",
+        dark: "/screenshots/desktop/deployments-dark.png",
         alt: "Querial — Deployments",
         caption: "Deployments",
         description: "Version + environment kind + parameters",
     },
     {
-        src: "/screenshots/desktop/connections.svg",
+        light: "/screenshots/desktop/connections-light.png",
+        dark: "/screenshots/desktop/connections-dark.png",
         alt: "Querial — Connections",
         caption: "Connections",
         description: "Logical name, provider, per-kind endpoints",
     },
     {
-        src: "/screenshots/desktop/operations.svg",
+        light: "/screenshots/desktop/operations-light.png",
+        dark: "/screenshots/desktop/operations-dark.png",
         alt: "Querial — Operations",
         caption: "Operations",
         description: "Runs, leases, retry, failed-cone recovery",
@@ -45,6 +51,20 @@ const screenshots = [
 export function ProductShowcase() {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [lightboxOpen, setLightboxOpen] = useState(false);
+    const [isDark, setIsDark] = useState(false);
+
+    useEffect(() => {
+        const root = document.documentElement;
+        setIsDark(root.classList.contains("dark"));
+        const observer = new MutationObserver(() => {
+            setIsDark(root.classList.contains("dark"));
+        });
+        observer.observe(root, { attributes: true, attributeFilter: ["class"] });
+        return () => observer.disconnect();
+    }, []);
+
+    const srcOf = (shot: (typeof screenshots)[number]) =>
+        isDark ? shot.dark : shot.light;
 
     const nextSlide = useCallback(() => {
         setCurrentIndex((prev) => (prev + 1) % screenshots.length);
@@ -86,9 +106,9 @@ export function ProductShowcase() {
                         transition={{ duration: 0.5, delay: 0.1 }}
                         className="text-lg text-muted-foreground max-w-2xl mx-auto"
                     >
-                        Placeholders until production captures land. The real app is a
-                        collapsible left sidebar, page headers in the view, and modal
-                        create/edit for list entities.
+                        The Workspace is a collapsible left sidebar, page headers in the
+                        view, and modal create/edit for list entities. These captures use
+                        the same Tabler shell as the app.
                     </motion.p>
                 </div>
 
@@ -102,7 +122,7 @@ export function ProductShowcase() {
                         onClick={prevSlide}
                     >
                         <img
-                            src={screenshots[prev].src}
+                            src={srcOf(screenshots[prev])}
                             alt={screenshots[prev].alt}
                             className="w-48 md:w-56 rounded-xl shadow-xl border border-border/30 opacity-60 hover:opacity-80 transition-opacity bg-white dark:bg-zinc-900"
                         />
@@ -120,8 +140,8 @@ export function ProductShowcase() {
                         <div className="relative">
                             <AnimatePresence mode="wait">
                                 <motion.img
-                                    key={currentIndex}
-                                    src={screenshots[currentIndex].src}
+                                    key={`${currentIndex}-${isDark}`}
+                                    src={srcOf(screenshots[currentIndex])}
                                     alt={screenshots[currentIndex].alt}
                                     className="w-72 md:w-[28rem] rounded-2xl shadow-2xl shadow-querial-indigo/20 border border-border/30 cursor-pointer bg-white dark:bg-zinc-900"
                                     initial={{ opacity: 0, scale: 0.95 }}
@@ -147,7 +167,7 @@ export function ProductShowcase() {
                         onClick={nextSlide}
                     >
                         <img
-                            src={screenshots[next].src}
+                            src={srcOf(screenshots[next])}
                             alt={screenshots[next].alt}
                             className="w-48 md:w-56 rounded-xl shadow-xl border border-border/30 opacity-60 hover:opacity-80 transition-opacity bg-white dark:bg-zinc-900"
                         />
@@ -187,7 +207,7 @@ export function ProductShowcase() {
             </div>
 
             <Lightbox
-                images={screenshots.map((s) => ({ src: s.src, alt: s.alt, caption: s.caption }))}
+                images={screenshots.map((s) => ({ src: srcOf(s), alt: s.alt, caption: s.caption }))}
                 initialIndex={currentIndex}
                 isOpen={lightboxOpen}
                 onClose={() => setLightboxOpen(false)}

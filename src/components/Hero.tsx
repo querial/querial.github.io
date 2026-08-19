@@ -5,38 +5,38 @@ import { Lightbox } from "@/components/Lightbox";
 
 const heroScreenshots = [
   {
-    light: "/screenshots/desktop/dag-designer.svg",
-    dark: "/screenshots/desktop/dag-designer.svg",
+    light: "/screenshots/desktop/dag-designer-light.png",
+    dark: "/screenshots/desktop/dag-designer-dark.png",
     alt: "Querial — DAG designer",
     caption: "DAG designer",
   },
   {
-    light: "/screenshots/desktop/sql-editor.svg",
-    dark: "/screenshots/desktop/sql-editor.svg",
+    light: "/screenshots/desktop/sql-editor-light.png",
+    dark: "/screenshots/desktop/sql-editor-dark.png",
     alt: "Querial — SQL workspace",
     caption: "SQL workspace",
   },
   {
-    light: "/screenshots/desktop/run-visualizer.svg",
-    dark: "/screenshots/desktop/run-visualizer.svg",
+    light: "/screenshots/desktop/run-visualizer-light.png",
+    dark: "/screenshots/desktop/run-visualizer-dark.png",
     alt: "Querial — Run visualizer",
     caption: "Run visualizer",
   },
   {
-    light: "/screenshots/desktop/deployments.svg",
-    dark: "/screenshots/desktop/deployments.svg",
+    light: "/screenshots/desktop/deployments-light.png",
+    dark: "/screenshots/desktop/deployments-dark.png",
     alt: "Querial — Deployments",
     caption: "Deployments",
   },
   {
-    light: "/screenshots/desktop/connections.svg",
-    dark: "/screenshots/desktop/connections.svg",
+    light: "/screenshots/desktop/connections-light.png",
+    dark: "/screenshots/desktop/connections-dark.png",
     alt: "Querial — Connections",
     caption: "Connections",
   },
   {
-    light: "/screenshots/desktop/operations.svg",
-    dark: "/screenshots/desktop/operations.svg",
+    light: "/screenshots/desktop/operations-light.png",
+    dark: "/screenshots/desktop/operations-dark.png",
     alt: "Querial — Operations",
     caption: "Operations",
   },
@@ -209,10 +209,6 @@ export function Hero() {
                   />
                 </AnimatePresence>
               </div>
-              <p className="mt-2 text-center text-[10px] uppercase tracking-wider text-muted-foreground/70">
-                Placeholder screenshot
-              </p>
-
               <div className="flex items-center justify-center gap-4 mt-4">
                 <button
                   onClick={prevSlide}

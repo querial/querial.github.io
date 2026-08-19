@@ -6,7 +6,7 @@ This repository is the public marketing and documentation site for Querial, a se
 
 ## Pages
 
-- **Home** — Product overview, how it works, features, personas, architecture, screenshots (placeholders), roadmap, FAQ
+- **Home** — Product overview, how it works, features, personas, architecture, Workspace screenshots, roadmap, FAQ
 - **About** — Why Querial exists
 - **Docs** — Guides by persona
   - Developers — Workspace, DAG designer, SQL workspace, packages
@@ -24,7 +24,7 @@ This repository is the public marketing and documentation site for Querial, a se
 - Radix UI
 - Lucide Icons
 
-Screenshot images under `public/screenshots/desktop/` are placeholders and should be replaced with captures from Workspace.
+Workspace screenshots under `public/screenshots/desktop/` are light/dark PNG captures of the Tabler MVC shell (`npm run screenshots`). They are not live logins of a running instance.
 
 ## Development
 
