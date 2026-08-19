@@ -1,0 +1,90 @@
+---
+import LabsLayout from "../../layouts/labs.astro";
+---
+
+<LabsLayout title="Scenario B — PostgreSQL staged load — Querial Labs" active="b">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-indigo-on-dark">Scenario B</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">PostgreSQL staged load</h1>
+            <p class="text-muted-foreground mt-3">
+                Minimal Parquet path. Extract products from SQL Server to an artifact,
+                then Staged Database SQL upserts into PostgreSQL. This is the smallest
+                lab that needs Artifacts + DuckDB.
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="/labs/adventureworks/downloads/scenario-b-postgres.zip" download
+               class="inline-flex items-center rounded-lg bg-querial-indigo px-4 py-2 text-sm font-medium text-white hover:opacity-90">
+                Download scenario-b-postgres.zip
+            </a>
+            <a href="/labs/run-through" class="inline-flex items-center rounded-lg border border-border/60 px-4 py-2 text-sm font-medium hover:bg-muted/50">
+                Load and test
+            </a>
+            <a href="/docs/devops-artifacts" class="inline-flex items-center rounded-lg border border-border/60 px-4 py-2 text-sm font-medium hover:bg-muted/50">
+                Artifacts docs
+            </a>
+        </div>
+
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+            <h2>Package</h2>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Package <code class="text-foreground">aw-scenario-b</code>, pipeline <code class="text-foreground">aw_scenario_b</code>.</li>
+                <li><code class="text-foreground">aw-source</code> sqlserver — extract.</li>
+                <li><code class="text-foreground">aw-pg-dest</code> postgresql — migrations + staged load.</li>
+            </ul>
+
+            <h2>Topology</h2>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>extract_product  (ROOT, database-query-to-parquet → aw-source)
+  └─(artifact_available)→ load_product  (staged-database-sql → aw-pg-dest)</code></pre>
+            <p>
+                The sink must not start until artifact <code class="text-foreground">product</code>
+                exists. That is <code class="text-foreground">artifact_available</code>, not a
+                generic “succeeded” edge (though the extract must succeed to produce the file).
+            </p>
+
+            <h2>Migrations (aw-pg-dest)</h2>
+            <ol class="list-decimal pl-5 space-y-1">
+                <li><code class="text-foreground">001_create_schema</code></li>
+                <li><code class="text-foreground">004_create_product</code> — <code class="text-foreground">aw.product</code></li>
+            </ol>
+
+            <h2>Steps and config</h2>
+            <p>
+                <code class="text-foreground">extract_product</code> —
+                <code class="text-foreground">database-query-to-parquet</code>,
+                <code class="text-foreground">config.outputName = product</code> (no file extension).
+                SQL reads AdventureWorks product columns.
+            </p>
+            <p>
+                <code class="text-foreground">load_product</code> —
+                <code class="text-foreground">staged-database-sql</code>.
+                Stage <code class="text-foreground">product</code> with
+                <code class="text-foreground">from_step: extract_product</code>, column
+                contracts (id, name, product_number, color, costs, dates),
+                <code class="text-foreground">transaction.mode: stage-and-execute</code>.
+                Author SQL upserts from the staged symbol — there is no ArtifactToTable
+                auto-copy.
+            </p>
+
+            <h2>Flags</h2>
+            <p>
+                Required: <code class="text-foreground">Querial:Extensions:Artifacts</code>
+                and <code class="text-foreground">Querial:Extensions:DuckDb</code> (environment
+                often <code class="text-foreground">Querial__Extensions__Artifacts=true</code>
+                and <code class="text-foreground">Querial__Extensions__DuckDb=true</code>).
+            </p>
+
+            <h2>Walkthrough extras</h2>
+            <ol class="list-decimal pl-5 space-y-2">
+                <li>Create Development endpoints: source = AdventureWorks SQL Server; dest = PostgreSQL warehouse.</li>
+                <li>Run Graph: extract shows an artifact in the inspector; load stays not-ready until the file exists, then stages and executes.</li>
+                <li>If extract succeeds and load fails, retry / failed-cone is an operator action on run details — not on the canvas.</li>
+            </ol>
+
+            <h2>Verify</h2>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>SELECT COUNT(*) FROM aw.product;</code></pre>
+            <p>Compare to <code class="text-foreground">Production.Product</code> on the source (the extract SQL’s filter).</p>
+        </div>
+    </div>
+</LabsLayout>

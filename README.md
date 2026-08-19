@@ -8,6 +8,7 @@ This repository is the public marketing and documentation site for Querial, a se
 
 - **Home** — Product overview, how it works, features, personas, architecture, Workspace screenshots, roadmap, FAQ
 - **About** — Why Querial exists
+- **Labs** — AdventureWorks scenario packages, packing script, import/deploy/run walkthrough
 - **Docs** — Guides by persona
   - Developers — Workspace, DAG designer, SQL workspace, packages
   - DevOps — Connections, deployments, scheduling, agents/keys/Git, artifacts, retry

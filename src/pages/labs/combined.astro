@@ -1,0 +1,60 @@
+---
+import LabsLayout from "../../layouts/labs.astro";
+---
+
+<LabsLayout title="Combined package — Querial Labs" active="combined">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-indigo-on-dark">Labs</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Combined package</h1>
+            <p class="text-muted-foreground mt-3">
+                <code class="text-foreground">aw-lab-all</code> is one zip with every
+                selected scenario pipeline and a union connection catalog. Use it when you
+                want all five labs in a single import into the current project.
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="/labs/adventureworks/downloads/aw-lab-all.zip" download
+               class="inline-flex items-center rounded-lg bg-querial-indigo px-4 py-2 text-sm font-medium text-white hover:opacity-90">
+                Download aw-lab-all.zip
+            </a>
+            <a href="/labs/packing" class="inline-flex items-center rounded-lg border border-border/60 px-4 py-2 text-sm font-medium hover:bg-muted/50">
+                Rebuild with -Combined
+            </a>
+        </div>
+
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+            <h2>What is inside</h2>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Package code <code class="text-foreground">aw-lab-all</code>.</li>
+                <li>Pipelines: <code class="text-foreground">aw_scenario_a</code> … <code class="text-foreground">aw_scenario_e</code> (when packed with the default scenario set).</li>
+                <li>Catalog union: <code class="text-foreground">aw-source</code>, <code class="text-foreground">aw-sql-dest</code>, <code class="text-foreground">aw-pg-dest</code>. Same name with different providers is rejected at pack time.</li>
+                <li>Each pipeline keeps its own connection allow-list from the original scenario.</li>
+            </ul>
+
+            <h2>Import</h2>
+            <p>
+                Same modal as a single scenario. Resolve the three stubs once. Success
+                reports five pipelines. Overwrite drafts if you previously imported A–E
+                separately (same pipeline codes).
+            </p>
+            <p>
+                Publish <strong class="text-foreground">each</strong> pipeline you intend
+                to run. Create one Development deployment per pipeline (or start with A,
+                then B). Do not assume one deployment covers the forest — a deployment
+                binds one published version.
+            </p>
+
+            <h2>Rebuild a subset</h2>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>.\build-packages.ps1 -Combined -Scenarios A,B -Zip
+# still writes scenario-a and scenario-b trees, plus aw-lab-all with only A and B</code></pre>
+
+            <h2>When to prefer single zips</h2>
+            <p>
+                Teaching one topology: download that scenario zip so the project is not
+                cluttered. Combined is for a shared lab project that will run all paths
+                against the same three logical connections.
+            </p>
+        </div>
+    </div>
+</LabsLayout>

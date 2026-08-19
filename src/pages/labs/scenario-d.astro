@@ -1,0 +1,79 @@
+---
+import LabsLayout from "../../layouts/labs.astro";
+---
+
+<LabsLayout title="Scenario D — Single-root fan-out — Querial Labs" active="d">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-indigo-on-dark">Scenario D</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Single-root fan-out</h1>
+            <p class="text-muted-foreground mt-3">
+                Teaching topology and failure policy. One extract is the only structural
+                root. Both destination loads hang off it. SQL Server uses
+                <code class="text-foreground">sql_command</code> with step
+                <code class="text-foreground">failure_policy: continue</code>; PostgreSQL
+                uses staged SQL from the same Parquet file.
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="/labs/adventureworks/downloads/scenario-d-fanout.zip" download
+               class="inline-flex items-center rounded-lg bg-querial-indigo px-4 py-2 text-sm font-medium text-white hover:opacity-90">
+                Download scenario-d-fanout.zip
+            </a>
+            <a href="/labs/run-through" class="inline-flex items-center rounded-lg border border-border/60 px-4 py-2 text-sm font-medium hover:bg-muted/50">
+                Load and test
+            </a>
+            <a href="/docs/developer-pipelines" class="inline-flex items-center rounded-lg border border-border/60 px-4 py-2 text-sm font-medium hover:bg-muted/50">
+                Failure policy
+            </a>
+        </div>
+
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+            <h2>Package</h2>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Package <code class="text-foreground">aw-scenario-d</code>, pipeline <code class="text-foreground">aw_scenario_d</code>.</li>
+                <li>Same three stubs as C: source, sql-dest, pg-dest.</li>
+            </ul>
+
+            <h2>Topology</h2>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>extract_sales_order  (ROOT, parquet → aw-source)
+  ├─(succeeded)──────────→ load_sales_order_sqlserver
+  │                        sql_command, failure_policy continue, re-queries source
+  └─(artifact_available)→ load_sales_order_postgres
+                           staged-database-sql → aw-pg-dest</code></pre>
+            <p>
+                Unlike C, the SS load is <strong class="text-foreground">not</strong> a root.
+                It waits for the extract to succeed even though it re-queries AdventureWorks
+                instead of reading Parquet.
+            </p>
+
+            <h2>Migrations</h2>
+            <p>Same dual chains as C (ss_001/ss_005 and pg_001/pg_005).</p>
+
+            <h2>Failure policy</h2>
+            <ul class="list-disc pl-5 space-y-2">
+                <li>SS load <code class="text-foreground">failure_policy: continue</code> — a MERGE failure does not latch run-wide fail-fast. Dependents that require success skip; the PG branch can still finish under run-level <code class="text-foreground">fail_fast</code>.</li>
+                <li>Optionally set the deployment override to <code class="text-foreground">continue_independent</code> when experimenting with other <code class="text-foreground">fail_pipeline</code> steps.</li>
+            </ul>
+            <p>
+                Experiment: point SS dest at a catalog without <code class="text-foreground">aw.sales_order</code>
+                (or break the MERGE), keep PG healthy, trigger. Graph: extract Succeeded,
+                SS Failed (continue), PG Succeeded. Run status may still be Failed because
+                a step failed — read the inspector, not only the run badge.
+            </p>
+
+            <h2>Flags</h2>
+            <p>PostgreSQL branch requires Artifacts + DuckDB.</p>
+
+            <h2>Run Graph</h2>
+            <p>
+                Exactly one root badge. Fan-out visible as two edges from the extract.
+                Click SS node: classification / failure policy continue. Click PG: artifact
+                from the extract. Critical path is extract plus the slower sink.
+            </p>
+
+            <h2>Verify</h2>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>SELECT COUNT(*) FROM aw.sales_order;  -- on each destination</code></pre>
+        </div>
+    </div>
+</LabsLayout>

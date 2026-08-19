@@ -1,0 +1,102 @@
+---
+import LabsLayout from "../../layouts/labs.astro";
+---
+
+<LabsLayout title="Scenario C — Multi-root forest — Querial Labs" active="c">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-indigo-on-dark">Scenario C</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Multi-root forest</h1>
+            <p class="text-muted-foreground mt-3">
+                One pipeline, three logical connections, mixed handlers. Several steps have
+                no inbound edges and become Ready together. Contrast with
+                <a href="/labs/scenario-d" class="text-link hover:underline">D</a> (one root)
+                and <a href="/labs/scenario-e" class="text-link hover:underline">E</a> (full artifact spine).
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="/labs/adventureworks/downloads/scenario-c-both.zip" download
+               class="inline-flex items-center rounded-lg bg-querial-indigo px-4 py-2 text-sm font-medium text-white hover:opacity-90">
+                Download scenario-c-both.zip
+            </a>
+            <a href="/labs/run-through" class="inline-flex items-center rounded-lg border border-border/60 px-4 py-2 text-sm font-medium hover:bg-muted/50">
+                Load and test
+            </a>
+        </div>
+
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+            <h2>Package</h2>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Package <code class="text-foreground">aw-scenario-c</code>, pipeline <code class="text-foreground">aw_scenario_c</code>.</li>
+                <li><code class="text-foreground">aw-source</code> — Parquet extracts for the PostgreSQL path.</li>
+                <li><code class="text-foreground">aw-sql-dest</code> — SQL Server migrations and <code class="text-foreground">sql_command</code> MERGE (re-queries AdventureWorks; does not consume the extracts).</li>
+                <li><code class="text-foreground">aw-pg-dest</code> — PostgreSQL migrations and staged loads.</li>
+            </ul>
+            <p>No distributed transaction across destinations.</p>
+
+            <h2>Topology</h2>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>extract_sales_order     (ROOT, parquet → aw-source)
+extract_sales_line      (ROOT, parquet → aw-source)
+load_sales_order_sqlserver  (ROOT, sql_command → aw-sql-dest)
+  └─(required)→ load_sales_line_sqlserver
+
+extract_sales_order ─(artifact_available)→ load_sales_order_postgres  (staged → aw-pg-dest)
+extract_sales_line  ─(artifact_available)→ load_sales_line_postgres
+load_sales_order_postgres ─(required)→ load_sales_line_postgres</code></pre>
+            <p>
+                Typical structural roots: both extracts and <code class="text-foreground">load_sales_order_sqlserver</code>.
+                Publish warns when root count &gt; 1 and requires confirmation. Run plans snapshot
+                <code class="text-foreground">root_step_codes</code>.
+            </p>
+
+            <h2>Migrations</h2>
+            <p>Two independent chains:</p>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>SQL Server: <code class="text-foreground">ss_001_create_schema</code> → <code class="text-foreground">ss_005_create_sales</code></li>
+                <li>PostgreSQL: <code class="text-foreground">pg_001_create_schema</code> → <code class="text-foreground">pg_005_create_sales</code></li>
+            </ul>
+
+            <h2>Steps</h2>
+            <ol class="list-decimal pl-5 space-y-1">
+                <li>Extracts: <code class="text-foreground">outputName</code> <code class="text-foreground">sales_order</code> / <code class="text-foreground">sales_line</code>.</li>
+                <li>SS: MERGE order then line (same-instance three-part names).</li>
+                <li>PG: staged loads with column contracts and <code class="text-foreground">stage-and-execute</code>.</li>
+            </ol>
+            <p>
+                Reference-only under this package (not graph nodes):
+                <code class="text-foreground">sql/reference/031_load_sales_order_sqlserver_staged.sql</code>
+                and <code class="text-foreground">051_*</code>. Lab E promotes those to real staged SS steps.
+            </p>
+
+            <h2>Failure policy experiment</h2>
+            <p>
+                Import, publish, create a deployment with
+                <code class="text-foreground">dag_failure_policy = continue_independent</code>
+                (or inherit if the pipeline default is that). Break the SS MERGE (bad catalog
+                name) and trigger. Sibling roots and the PG branch should keep running. With
+                <code class="text-foreground">fail_fast</code>, only a step whose snapshotted
+                policy is <code class="text-foreground">fail_pipeline</code> latches the whole run.
+                Skipped / cancelled / abandoned never trip fail-fast.
+            </p>
+
+            <h2>Flags</h2>
+            <p>PostgreSQL half requires Artifacts + DuckDB. SQL Server MERGE half does not.</p>
+
+            <h2>Run Graph</h2>
+            <p>
+                Three (or more) root badges. SS branch can finish while PG extracts are still
+                writing Parquet. Inspector on PG sinks should list staged artifacts.
+                Palette: steps grouped under three connections; migrations listed per dest, not as nodes.
+            </p>
+
+            <h2>Verify</h2>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>-- SQL Server dest
+SELECT COUNT(*) FROM aw.sales_order;
+SELECT COUNT(*) FROM aw.sales_line;
+
+-- PostgreSQL dest
+SELECT COUNT(*) FROM aw.sales_order;
+SELECT COUNT(*) FROM aw.sales_line;</code></pre>
+        </div>
+    </div>
+</LabsLayout>

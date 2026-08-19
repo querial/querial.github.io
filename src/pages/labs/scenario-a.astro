@@ -1,0 +1,83 @@
+---
+import LabsLayout from "../../layouts/labs.astro";
+---
+
+<LabsLayout title="Scenario A — SQL Server MERGE — Querial Labs" active="a">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-indigo-on-dark">Scenario A</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">SQL Server MERGE</h1>
+            <p class="text-muted-foreground mt-3">
+                First lab. One destination, no Parquet, no DuckDB. Person then customer
+                into schema <code class="text-foreground">aw</code> using
+                <code class="text-foreground">sql_command</code> and three-part names on
+                the same SQL Server instance as AdventureWorks.
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="/labs/adventureworks/downloads/scenario-a-sqlserver.zip" download
+               class="inline-flex items-center rounded-lg bg-querial-indigo px-4 py-2 text-sm font-medium text-white hover:opacity-90">
+                Download scenario-a-sqlserver.zip
+            </a>
+            <a href="/labs/run-through" class="inline-flex items-center rounded-lg border border-border/60 px-4 py-2 text-sm font-medium hover:bg-muted/50">
+                Load and test
+            </a>
+        </div>
+
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+            <h2>Package</h2>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Package code <code class="text-foreground">aw-scenario-a</code>, pipeline <code class="text-foreground">aw_scenario_a</code>.</li>
+                <li>Catalog: <code class="text-foreground">aw-source</code> (sqlserver, unused by steps) and <code class="text-foreground">aw-sql-dest</code> (sqlserver, migrations + loads).</li>
+                <li><code class="text-foreground">aw-source</code> exists so later scenarios share names. A does not bind extract steps.</li>
+            </ul>
+
+            <h2>Topology</h2>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>load_person  (ROOT, sql_command → aw-sql-dest)
+  └─(required)→ load_customer  (sql_command → aw-sql-dest)</code></pre>
+            <p>
+                One structural root. Publish should not ask for multi-root confirmation.
+            </p>
+
+            <h2>Migrations (aw-sql-dest)</h2>
+            <ol class="list-decimal pl-5 space-y-1">
+                <li><code class="text-foreground">001_create_schema</code> — create schema <code class="text-foreground">aw</code>.</li>
+                <li><code class="text-foreground">002_create_person</code> — <code class="text-foreground">aw.person</code>.</li>
+                <li><code class="text-foreground">003_create_customer</code> — <code class="text-foreground">aw.customer</code>.</li>
+            </ol>
+            <p>Edges: 001 → 002 → 003. Set deployment migration policy to <code class="text-foreground">before_run</code> for the first pass.</p>
+
+            <h2>Steps</h2>
+            <ol class="list-decimal pl-5 space-y-1">
+                <li><code class="text-foreground">load_person</code> — <code class="text-foreground">MERGE</code> from <code class="text-foreground">AdventureWorks.Person.Person</code> into <code class="text-foreground">aw.person</code>.</li>
+                <li><code class="text-foreground">load_customer</code> — <code class="text-foreground">MERGE</code> from <code class="text-foreground">AdventureWorks.Sales.Customer</code> into <code class="text-foreground">aw.customer</code> (depends on person).</li>
+            </ol>
+            <p>
+                If your source catalog is not named <code class="text-foreground">AdventureWorks</code>,
+                edit <code class="text-foreground">steps/A-sqlserver-only/*.sql</code> and
+                <a href="/labs/packing">re-pack</a>.
+            </p>
+
+            <h2>Walkthrough extras</h2>
+            <ol class="list-decimal pl-5 space-y-2">
+                <li>Import the zip. Map or create <code class="text-foreground">aw-sql-dest</code> with a Development endpoint to <code class="text-foreground">QuerialAdventureWorks</code> (or your dest). You can map <code class="text-foreground">aw-source</code> to the same instance’s AdventureWorks catalog even though A never queries it as a bound extract.</li>
+                <li>Designer: two nodes, one edge. Inspector types are <code class="text-foreground">sql_command</code>.</li>
+                <li>Publish v1. Create Development deployment, activate, trigger.</li>
+                <li>Run Graph: <code class="text-foreground">load_person</code> Ready first, then <code class="text-foreground">load_customer</code>. Both Succeeded. Logs show MERGE row counts.</li>
+            </ol>
+
+            <h2>Verify</h2>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>SELECT COUNT(*) FROM aw.person;
+SELECT COUNT(*) FROM aw.customer;</code></pre>
+            <p>
+                Counts should be in the same ballpark as
+                <code class="text-foreground">Person.Person</code> and
+                <code class="text-foreground">Sales.Customer</code> on the source.
+                Re-run the deployment: counts stay stable (idempotent MERGE).
+            </p>
+
+            <h2>Flags</h2>
+            <p>None beyond a working SQL Server destination. Artifacts / DuckDB not required.</p>
+        </div>
+    </div>
+</LabsLayout>

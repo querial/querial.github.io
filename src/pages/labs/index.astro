@@ -1,0 +1,130 @@
+---
+import LabsLayout from "../../layouts/labs.astro";
+
+const scenarios = [
+    {
+        href: "/labs/scenario-a",
+        code: "A",
+        title: "SQL Server MERGE",
+        package: "aw-scenario-a",
+        zip: "/labs/adventureworks/downloads/scenario-a-sqlserver.zip",
+        summary: "Same-instance sql_command loads of person and customer. First import, no Parquet.",
+    },
+    {
+        href: "/labs/scenario-b",
+        code: "B",
+        title: "PostgreSQL staged load",
+        package: "aw-scenario-b",
+        zip: "/labs/adventureworks/downloads/scenario-b-postgres.zip",
+        summary: "Extract product to Parquet, then staged-database-sql into PostgreSQL.",
+    },
+    {
+        href: "/labs/scenario-c",
+        code: "C",
+        title: "Multi-root forest",
+        package: "aw-scenario-c",
+        zip: "/labs/adventureworks/downloads/scenario-c-both.zip",
+        summary: "One pipeline, three connections. Independent SS MERGE and PG staged branches.",
+    },
+    {
+        href: "/labs/scenario-d",
+        code: "D",
+        title: "Single-root fan-out",
+        package: "aw-scenario-d",
+        zip: "/labs/adventureworks/downloads/scenario-d-fanout.zip",
+        summary: "One extract is the only root. Fan-out to SQL Server and PostgreSQL.",
+    },
+    {
+        href: "/labs/scenario-e",
+        code: "E",
+        title: "Artifact spine",
+        package: "aw-scenario-e",
+        zip: "/labs/adventureworks/downloads/scenario-e-artifacts.zip",
+        summary: "Extract → DuckDB artifact-sql → dual staged sinks. Full Parquet path.",
+    },
+];
+---
+
+<LabsLayout title="Labs — Querial" active="index">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-indigo-on-dark">AdventureWorks</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Labs</h1>
+            <p class="text-muted-foreground mt-3 max-w-2xl">
+                Five scenario packages plus a combined zip. Import them into Workspace,
+                bind Development endpoints, publish, create a deployment, trigger a run,
+                then watch the published graph in Run Graph.
+            </p>
+        </div>
+
+        <div class="rounded-xl border border-border/50 bg-card/50 p-5 space-y-3">
+            <h2 class="font-semibold">Start here</h2>
+            <ol class="list-decimal pl-5 text-sm text-muted-foreground space-y-1">
+                <li>Download a scenario zip (or pack one yourself).</li>
+                <li>Follow <a href="/labs/run-through" class="text-link hover:underline">Load and test</a> in Workspace.</li>
+                <li>Open the matching scenario page for topology, flags, and what to inspect.</li>
+            </ol>
+            <div class="flex flex-wrap gap-2 pt-2">
+                <a href="/labs/adventureworks/downloads/adventureworks-source.zip" download
+                   class="inline-flex items-center rounded-lg bg-querial-indigo px-4 py-2 text-sm font-medium text-white hover:opacity-90">
+                    Download lab source
+                </a>
+                <a href="/labs/adventureworks/downloads/aw-lab-all.zip" download
+                   class="inline-flex items-center rounded-lg border border-border/60 px-4 py-2 text-sm font-medium hover:bg-muted/50">
+                    Download all scenarios (zip)
+                </a>
+                <a href="/labs/packing" class="inline-flex items-center rounded-lg border border-border/60 px-4 py-2 text-sm font-medium hover:bg-muted/50">
+                    Packing script help
+                </a>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {scenarios.map((s) => (
+                <article class="rounded-xl border border-border/50 bg-card/50 p-5 flex flex-col gap-3">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="text-xs font-semibold text-querial-indigo-on-dark">Scenario {s.code}</p>
+                            <h2 class="font-semibold mt-0.5">{s.title}</h2>
+                        </div>
+                        <code class="text-[11px] text-muted-foreground">{s.package}</code>
+                    </div>
+                    <p class="text-sm text-muted-foreground flex-1">{s.summary}</p>
+                    <div class="flex flex-wrap gap-2">
+                        <a href={s.href} class="text-sm font-medium text-link hover:underline">Open lab →</a>
+                        <a href={s.zip} download class="text-sm text-muted-foreground hover:text-foreground">Download zip</a>
+                    </div>
+                </article>
+            ))}
+        </div>
+
+        <div class="prose dark:prose-invert max-w-none space-y-4 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+            <h2>What these labs are</h2>
+            <p>
+                AdventureWorks OLTP is the source. Destination tables live under schema
+                <code class="text-foreground">aw</code> on SQL Server and/or PostgreSQL.
+                Packages are <code class="text-foreground">querial.package/v1</code>:
+                codes are identity, catalogs have no secrets, import materializes into the
+                <strong class="text-foreground">current project</strong>.
+            </p>
+            <h2>Who does which click</h2>
+            <ul class="list-disc pl-5 space-y-1">
+                <li><strong class="text-foreground">DevOps</strong> (CanOperate) — Import package, create or map connections, create the deployment, activate, trigger the run, retry.</li>
+                <li><strong class="text-foreground">Developer</strong> (CanDesign) — Review the imported draft in the DAG designer and publish an immutable version. Development SQL only.</li>
+                <li><strong class="text-foreground">Project admin</strong> — Has both. Use this role for a solo walkthrough, including Production later.</li>
+            </ul>
+            <p>
+                Developers cannot import a zip or trigger a run. DevOps cannot author the
+                draft as a Designer unless they also have CanDesign. Isolation is the project.
+            </p>
+            <h2>Prerequisites</h2>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>A running Querial instance (Web, API, workers, PostgreSQL control plane).</li>
+                <li>Full AdventureWorks OLTP on SQL Server (not AdventureWorksLT). Three-part names in SQL assume catalog <code class="text-foreground">AdventureWorks</code> — edit and re-pack if yours is <code class="text-foreground">AdventureWorks2022</code>.</li>
+                <li>An empty-ish SQL Server destination catalog (examples use <code class="text-foreground">QuerialAdventureWorks</code>).</li>
+                <li>A PostgreSQL destination for B–E (local examples often use port <code class="text-foreground">15434</code> and database <code class="text-foreground">querial_test</code>).</li>
+                <li>Scenarios B, C (PostgreSQL half), D (PostgreSQL branch), and E need Artifacts and DuckDB extension flags on.</li>
+            </ul>
+        </div>
+    </div>
+</LabsLayout>

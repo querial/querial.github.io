@@ -20,6 +20,7 @@ export function Header() {
     { label: "How it works", href: "/#how-it-works" },
     { label: "Features", href: "/#features" },
     { label: "Personas", href: "/#personas" },
+    { label: "Labs", href: "/labs" },
   ];
 
   useEffect(() => {

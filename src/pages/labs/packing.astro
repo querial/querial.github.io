@@ -1,0 +1,152 @@
+---
+import LabsLayout from "../../layouts/labs.astro";
+---
+
+<LabsLayout title="Packing script — Querial Labs" active="packing">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-indigo-on-dark">Labs</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Packing script</h1>
+            <p class="text-muted-foreground mt-3 max-w-2xl">
+                <code class="text-foreground">build-packages.ps1</code> copies canonical
+                SQL from <code class="text-foreground">migrations/</code> and
+                <code class="text-foreground">steps/</code> into valid
+                <code class="text-foreground">querial.package/v1</code> trees. You do not
+                hand-edit generated YAML for day-to-day lab work — edit the SQL, then re-run the script.
+            </p>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+            <a href="/labs/adventureworks/downloads/adventureworks-source.zip" download
+               class="inline-flex items-center rounded-lg bg-querial-indigo px-4 py-2 text-sm font-medium text-white hover:opacity-90">
+                Download lab source
+            </a>
+            <a href="/labs/adventureworks/source/build-packages.ps1" download
+               class="inline-flex items-center rounded-lg border border-border/60 px-4 py-2 text-sm font-medium hover:bg-muted/50">
+                Download build-packages.ps1
+            </a>
+            <a href="/labs/adventureworks/source/verify-connections.ps1" download
+               class="inline-flex items-center rounded-lg border border-border/60 px-4 py-2 text-sm font-medium hover:bg-muted/50">
+                Download verify-connections.ps1
+            </a>
+        </div>
+
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+            <h2>Layout after unzip</h2>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>adventureworks-source/
+  build-packages.ps1
+  verify-connections.ps1
+  README.md
+  migrations/
+    sqlserver/     001_create_schema.sql … 005_create_sales.sql
+    postgres/      same codes, dialect SQL
+  steps/
+    A-sqlserver-only/
+    B-postgres-only/
+    C-both/
+    D-fanout/
+    E-artifacts/</code></pre>
+            <p>
+                Keep this folder together. The script copies SQL using paths relative to
+                itself. Do not run it from a folder that only contains the <code class="text-foreground">.ps1</code>.
+            </p>
+
+            <h2>What it emits</h2>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>packages/
+  scenario-a-sqlserver/          # tree
+  scenario-a-sqlserver.zip       # with -Zip
+  scenario-b-postgres/
+  scenario-c-both/
+  scenario-d-fanout/
+  scenario-e-artifacts/
+  aw-lab-all/                    # with -Combined
+  aw-lab-all.zip</code></pre>
+            <p>
+                Each tree contains <code class="text-foreground">querial.package.yaml</code>,
+                <code class="text-foreground">connections/catalog.yaml</code> (stubs only:
+                name, provider, description), <code class="text-foreground">pipelines/&lt;code&gt;/pipeline.yaml</code>,
+                copied SQL, and a per-pipeline README. Re-running overwrites those folders.
+                The script never writes connection strings or passwords.
+            </p>
+
+            <h2>Parameters</h2>
+            <ul class="list-disc pl-5 space-y-2">
+                <li><code class="text-foreground">-Scenarios A,B,C,D,E</code> — subset to build. Default is all five. Comma-separated or multiple args. Unknown letters throw.</li>
+                <li><code class="text-foreground">-Zip</code> — write a zip next to each tree. Prefer this for Workspace import (the modal expects a zip, 64&nbsp;MB max).</li>
+                <li><code class="text-foreground">-Validate</code> — after each tree, run the Package CLI if <code class="text-foreground">QUERIAL_PACKAGE_CLI</code> points at a <code class="text-foreground">.csproj</code>; otherwise a structural check (manifest, catalog names, referenced SQL files exist).</li>
+                <li><code class="text-foreground">-Combined</code> — also emit <code class="text-foreground">aw-lab-all</code> with every selected pipeline and a union catalog. Connection name clashes with different providers fail closed.</li>
+                <li><code class="text-foreground">-OutDir</code> — override the packages folder (relative to the script, or absolute).</li>
+            </ul>
+
+            <h2>Commands</h2>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>cd path\to\adventureworks-source
+
+# All five trees
+.\build-packages.ps1
+
+# Trees + zips + structural (or Package CLI) validation
+.\build-packages.ps1 -Zip -Validate
+
+# Only C, then only D and E
+.\build-packages.ps1 -Scenarios A,C
+.\build-packages.ps1 -Scenarios D,E -Validate
+
+# Per-scenario packages plus aw-lab-all
+.\build-packages.ps1 -Combined -Zip -Validate
+.\build-packages.ps1 -Combined -Scenarios A,B -OutDir .\packages</code></pre>
+
+            <h2>Zips: Package CLI vs Compress-Archive</h2>
+            <p>
+                If you set <code class="text-foreground">$env:QUERIAL_PACKAGE_CLI</code> to
+                the Package CLI project file, <code class="text-foreground">-Zip</code> calls
+                <code class="text-foreground">dotnet run --project … -- pack &lt;tree&gt; &lt;zip&gt;</code>
+                and <code class="text-foreground">-Validate</code> calls
+                <code class="text-foreground">validate</code>. That path is checksum-stable
+                and matches what Querial’s import validator expects.
+            </p>
+            <p>
+                Without that environment variable, <code class="text-foreground">-Zip</code>
+                uses PowerShell <code class="text-foreground">Compress-Archive</code> on the
+                tree contents. That zip still imports when the layout is valid. Use it for
+                local labs; use the CLI when you need bit-stable archives.
+            </p>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>$env:QUERIAL_PACKAGE_CLI = "C:\path\to\Querial.PackageCli.csproj"
+.\build-packages.ps1 -Zip -Validate</code></pre>
+
+            <h2>How a scenario is defined</h2>
+            <p>
+                Scenario tables live inside the script (not separate YAML). Each scenario
+                has a package code, revision, connection stubs, and one pipeline with:
+            </p>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Migrations and <code class="text-foreground">migration_dependencies</code> (no <code class="text-foreground">requirement</code> flag on migration edges).</li>
+                <li>Steps with type, connection, SQL path, optional <code class="text-foreground">config</code> and <code class="text-foreground">failure_policy</code>.</li>
+                <li>Step edges: <code class="text-foreground">from</code> → <code class="text-foreground">to</code>, with <code class="text-foreground">requirement</code> of <code class="text-foreground">required</code>, <code class="text-foreground">succeeded</code>, or <code class="text-foreground">artifact_available</code>.</li>
+                <li><code class="text-foreground">SqlCopies</code> mapping canonical files into the package tree.</li>
+            </ul>
+            <p>
+                After you change a <code class="text-foreground">.sql</code> file, re-run
+                the script. Import again in Workspace with <strong class="text-foreground">Overwrite existing non-empty drafts</strong>
+                if the pipeline code already exists.
+            </p>
+
+            <h2>verify-connections.ps1</h2>
+            <p>
+                Optional pre-flight. It does <strong class="text-foreground">not</strong>
+                apply Querial migrations. It checks AdventureWorks
+                <code class="text-foreground">Person.Person</code>, that the SQL Server
+                destination catalog opens, optional <code class="text-foreground">psql</code>
+                inside a Docker container named <code class="text-foreground">target-pg</code>
+                (override with <code class="text-foreground">-PgContainerName</code>), and
+                TCP to <code class="text-foreground">-PgHost:-PgPort</code>.
+            </p>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>.\verify-connections.ps1
+.\verify-connections.ps1 -AdventureWorksDb AdventureWorks2022 -QuerialSqlDb YourDestName
+.\verify-connections.ps1 -PgHost 127.0.0.1 -PgPort 15434 -PgPassword '&lt;local&gt;'</code></pre>
+            <p>
+                Pass <code class="text-foreground">-PgPassword</code> only when you want
+                the in-container query. Do not commit real passwords. Fix failures before import.
+            </p>
+        </div>
+    </div>
+</LabsLayout>

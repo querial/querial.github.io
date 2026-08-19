@@ -1,0 +1,111 @@
+---
+import LabsLayout from "../../layouts/labs.astro";
+---
+
+<LabsLayout title="Scenario E — Artifact spine — Querial Labs" active="e">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-indigo-on-dark">Scenario E</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Artifact spine</h1>
+            <p class="text-muted-foreground mt-3">
+                Full produce → transform → consume path. One structural root. DuckDB
+                <code class="text-foreground">artifact-sql</code> between extracts and
+                dual staged sinks (SQL Server and PostgreSQL). SS staged MERGE scripts
+                are real steps here (promoted from C’s reference files).
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="/labs/adventureworks/downloads/scenario-e-artifacts.zip" download
+               class="inline-flex items-center rounded-lg bg-querial-indigo px-4 py-2 text-sm font-medium text-white hover:opacity-90">
+                Download scenario-e-artifacts.zip
+            </a>
+            <a href="/labs/run-through" class="inline-flex items-center rounded-lg border border-border/60 px-4 py-2 text-sm font-medium hover:bg-muted/50">
+                Load and test
+            </a>
+            <a href="/docs/devops-artifacts" class="inline-flex items-center rounded-lg border border-border/60 px-4 py-2 text-sm font-medium hover:bg-muted/50">
+                Artifacts docs
+            </a>
+        </div>
+
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+            <h2>Why this lab</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-left border-b border-border/50">
+                            <th class="py-2 pr-3">Lab</th>
+                            <th class="py-2">Focus</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-muted-foreground">
+                        <tr class="border-b border-border/30"><td class="py-2 pr-3 font-medium text-foreground">B</td><td>Minimal PG: extract → staged PG</td></tr>
+                        <tr class="border-b border-border/30"><td class="py-2 pr-3 font-medium text-foreground">C</td><td>Multi-root; SS sql_command + PG staged</td></tr>
+                        <tr class="border-b border-border/30"><td class="py-2 pr-3 font-medium text-foreground">D</td><td>Single-root fan-out + continue on SS</td></tr>
+                        <tr><td class="py-2 pr-3 font-medium text-foreground">E</td><td>Extract → artifact-sql → dual staged sinks</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2>Package</h2>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Package <code class="text-foreground">aw-scenario-e</code>, pipeline <code class="text-foreground">aw_scenario_e</code>.</li>
+                <li>Three stubs: <code class="text-foreground">aw-source</code>, <code class="text-foreground">aw-sql-dest</code>, <code class="text-foreground">aw-pg-dest</code>.</li>
+            </ul>
+
+            <h2>Topology</h2>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>extract_sales_order (ROOT, parquet)
+  ├─(artifact_available)→ transform_sales_order (artifact-sql, DuckDB)
+  │                         ├─(artifact_available)→ load_sales_order_sqlserver (staged)
+  │                         └─(artifact_available)→ load_sales_order_postgres (staged)
+  └─(succeeded)→ extract_sales_line
+                   └─(artifact_available)→ transform_sales_line (artifact-sql)
+                                             ├─→ load_sales_line_sqlserver (staged)
+                                             └─→ load_sales_line_postgres (staged)
+
+Line loads also require the matching order load (required) on each destination.</code></pre>
+            <p>
+                Line extract hangs off the order extract so the graph stays single-root
+                (unlike C). All artifact edges use <code class="text-foreground">artifact_available</code>.
+            </p>
+
+            <h2>artifact-sql config</h2>
+            <p>
+                Transforms have <code class="text-foreground">config.outputName</code>
+                (<code class="text-foreground">sales_order_transformed</code> /
+                <code class="text-foreground">sales_line_transformed</code>) and
+                <code class="text-foreground">config.inputs.&lt;name&gt;.from_step</code>.
+                DuckDB SQL references inputs with the package token form
+                <code class="text-foreground">{"{{ input.name }}"}</code>.
+                Eligible agents run DuckDB embedded — not a separate warehouse you manage.
+                <code class="text-foreground">from_step</code> is same-run only and requires
+                the producer Succeeded.
+            </p>
+            <p>
+                Staged sinks bind <code class="text-foreground">from_step</code> to the
+                transform, not the extract. Column contracts match the transformed schema.
+                <code class="text-foreground">transaction.mode: stage-and-execute</code>.
+            </p>
+
+            <h2>Flags (required)</h2>
+            <ul class="list-disc pl-5 space-y-1">
+                <li><code class="text-foreground">Querial:Extensions:Artifacts=true</code></li>
+                <li><code class="text-foreground">Querial:Extensions:DuckDb=true</code></li>
+            </ul>
+            <p>Both destinations use staged handlers, so both flags apply even for the SQL Server half.</p>
+
+            <h2>Walkthrough extras</h2>
+            <ol class="list-decimal pl-5 space-y-2">
+                <li>Import, resolve all three connections, Development endpoints on each.</li>
+                <li>Publish: one root — no multi-root warning.</li>
+                <li>Deployment: <code class="text-foreground">before_run</code> migrations, Development, activate, trigger.</li>
+                <li>Run Graph: watch extract → transform (DuckDB) → both sinks. Inspector artifacts on transform and on each load. SQL tab shows published DuckDB and staged MERGE, not the draft.</li>
+                <li>If a sink fails after transforms succeeded, failed-cone retry can reuse succeeded steps and clone artifacts (DevOps on run details).</li>
+            </ol>
+
+            <h2>Verify</h2>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>SELECT COUNT(*) FROM aw.sales_order;
+SELECT COUNT(*) FROM aw.sales_line;</code></pre>
+            <p>Run on both destinations. Counts should match each other after a healthy run (same transformed grain).</p>
+        </div>
+    </div>
+</LabsLayout>
