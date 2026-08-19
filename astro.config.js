@@ -8,7 +8,7 @@ export default defineConfig({
   site: 'https://querial.github.io',
   base: '/',
   redirects: {
-    "/thankyou": "/thank-you",
+    "/thank-you": "/thankyou",
   },
   integrations: [
     react(),
