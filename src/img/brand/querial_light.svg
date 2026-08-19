@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="148" height="26" viewBox="0 0 148 26" role="img" aria-label="Querial">
+  <rect x="1" y="1" width="24" height="24" rx="6" fill="#3451B2"/>
+  <circle cx="11.55" cy="11.35" r="5.2" fill="none" stroke="#fff" stroke-width="2.25"/>
+  <path d="M15.35 15.15 L17.45 17.25" fill="none" stroke="#fff" stroke-width="2.25" stroke-linecap="round"/>
+  <circle cx="19.2" cy="19.2" r="2.15" fill="#fff"/>
+  <text x="32" y="19" fill="#182433" font-family="Segoe UI, Inter, system-ui, sans-serif" font-size="18" font-weight="700">Querial</text>
+</svg>

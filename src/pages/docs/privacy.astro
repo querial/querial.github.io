@@ -1,0 +1,63 @@
+---
+import DocsLayout from "../../layouts/docs.astro";
+---
+
+<DocsLayout title="Privacy Policy — Querial">
+    <div class="space-y-8">
+        <div>
+            <h1 class="text-3xl md:text-4xl font-bold">Privacy Policy</h1>
+            <p class="text-muted-foreground mt-1">Last updated: August 2026</p>
+        </div>
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+            <h2>1. Overview</h2>
+            <p>
+                Querial is a self-hosted control plane. This marketing site does not
+                operate your instance, store your pipeline SQL, or receive target database
+                credentials. Use of a Querial instance is also subject to the
+                <a href="/docs/eula" class="text-link hover:underline">Terms of Use</a>.
+            </p>
+
+            <h2>2. What an instance stores</h2>
+            <p>
+                The organization that runs Querial stores, in its own control database
+                (PostgreSQL 18 with pgvector):
+            </p>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Identity accounts, team and project memberships, invites, and preferences (theme, culture, timezone)</li>
+                <li>Pipeline designs, published versions, deployments, schedules, runs, logs, and audit snapshots</li>
+                <li>Encrypted connection endpoints (AES-256-GCM). APIs never return decrypted secrets</li>
+                <li>Hashed API keys (shown in full only at creation)</li>
+                <li>Optional SqlAssist embeddings and chat history</li>
+                <li>Artifact metadata; object bytes on local disk or an S3-compatible store the operator configures</li>
+            </ul>
+            <p>
+                Target databases hold business rows and target-local migration history.
+                Querial does not copy those rows into the control plane as a warehouse.
+            </p>
+
+            <h2>3. What this website stores</h2>
+            <p>
+                This documentation site is static. Theme preference may be saved in
+                browser localStorage (<code class="text-foreground">theme</code>). No
+                account is created here. No analytics vendor is required by the site
+                template.
+            </p>
+
+            <h2>4. Optional providers inside an instance</h2>
+            <p>
+                If an operator enables a cloud LLM for SqlAssist, prompts leave the
+                instance only under that operator's configuration. Assistance is
+                draft-only. Git remotes, if configured, receive package trees that must
+                not contain secrets. Mail for invites uses the operator's SMTP; invite
+                send fails closed if mail cannot be sent.
+            </p>
+
+            <h2>5. Isolation</h2>
+            <p>
+                Catalog lists and gets are scoped to the current project. A foreign id
+                is not-found. API keys cannot act outside their project. Forged team or
+                project cookies are ignored.
+            </p>
+        </div>
+    </div>
+</DocsLayout>

@@ -1,0 +1,78 @@
+---
+import DocsLayout from "../../layouts/docs.astro";
+---
+
+<DocsLayout title="Core concepts — Querial">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-indigo-on-dark">Start here</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Core concepts</h1>
+            <p class="text-muted-foreground mt-2">
+                Querial is a SQL-native data transformation and orchestration platform for designing, versioning, deploying, and operating database pipelines across multiple target databases.
+            </p>
+        </div>
+
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground [&>h3]:text-foreground">
+            <h2>The loop</h2>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>Pipeline design
+    → versioned SQL steps and migrations
+    → deployment to one or more connections
+    → scheduled or manual execution
+    → target-local processing
+    → central execution and audit records</code></pre>
+
+            <h2>Terms</h2>
+            <div class="overflow-x-auto not-prose">
+                <table class="w-full text-sm border-collapse">
+                    <thead>
+                        <tr class="border-b border-border text-left">
+                            <th class="py-2 pr-4 font-semibold">Term</th>
+                            <th class="py-2 font-semibold">Meaning</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-muted-foreground">
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Pipeline</td><td class="py-2">Named design: steps, migrations, parameters, edges.</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Version</td><td class="py-2">Published snapshot. Immutable DAG.</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Step</td><td class="py-2">Handler + SQL or properties, bound to a logical connection.</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Migration</td><td class="py-2">Ordered, run-once SQL. History lives on the target.</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Connection</td><td class="py-2">Logical name + provider; encrypted endpoints per EnvironmentKind.</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">EnvironmentKind</td><td class="py-2">Closed set: development, staging, production.</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Deployment</td><td class="py-2">Binding of a version to an environment kind, parameters, optional schedule.</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Run</td><td class="py-2">One execution of one deployed version against resolved endpoints.</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Agent</td><td class="py-2">Registered worker that heartbeats, joins a pool, and pulls leases.</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Artifact</td><td class="py-2">Durable file (typically Parquet) with lineage metadata.</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Package</td><td class="py-2">querial.package/v1 file tree. Codes are identity. No secrets.</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Team</td><td class="py-2">People plus who may create projects. Not the isolation boundary.</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Project</td><td class="py-2">Isolation: pipelines, connections, agents, keys, runs.</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Workspace</td><td class="py-2">Root-URL shell for project work.</td></tr>
+                        <tr><td class="py-2 pr-4 font-medium text-foreground">Administration</td><td class="py-2">/Admin shell for team factory, invite, inspector, users, AI.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2>Roles at a glance</h2>
+            <ul class="space-y-2 text-muted-foreground list-disc pl-5">
+                <li><strong class="text-foreground">Developer</strong> (project) — CanDesign. Interactive SQL is Development only.</li>
+                <li><strong class="text-foreground">DevOps</strong> (project) — CanOperate. SQL against any kind. Staging promote. Retry. Not Production approve.</li>
+                <li><strong class="text-foreground">Project admin</strong> — design + operate + project members (existing team users) + Production promote/approve.</li>
+                <li><strong class="text-foreground">Team admin</strong> — project factory in that team; treated as Project admin on every project in the team.</li>
+                <li><strong class="text-foreground">Platform admin</strong> — Identity Admin. Users, teams, AI, break-glass. Superuser; still picks a current project in the UI.</li>
+            </ul>
+            <p>DevOps does not imply Developer. Developer does not imply deploy rights.</p>
+
+            <h2>Rules that do not bend</h2>
+            <ol class="space-y-2 text-muted-foreground list-decimal pl-5">
+                <li>Raw provider-specific SQL is the pipeline language.</li>
+                <li>Pipeline design is separate from deployment.</li>
+                <li>Target-local migration history is authoritative.</li>
+                <li>Published versions are immutable.</li>
+                <li>Secrets are never returned decrypted and never stored in packages.</li>
+                <li>SqlAssist is draft-only and never auto-publishes.</li>
+                <li>Structural roots only — no trigger-time “run from step X”.</li>
+                <li>Staged Database SQL is the only artifact sink. There is no ArtifactToTable.</li>
+                <li>No distributed transactions across connections.</li>
+                <li>Catalog lists and gets are scoped to the current project; a foreign id is 404.</li>
+            </ol>
+        </div>
+    </div>
+</DocsLayout>

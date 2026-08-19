@@ -1,0 +1,45 @@
+---
+import DocsLayout from "../../layouts/docs.astro";
+---
+
+<DocsLayout title="Project membership and Production — Querial">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-indigo">For Project admins</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Project membership and Production</h1>
+        </div>
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+            <p>
+                Project admin includes Developer design rights and DevOps operate rights,
+                plus project membership management for people <strong class="text-foreground">already on the team</strong>.
+                You cannot create Identity logins, invite unknown emails, or create projects.
+                Isolation is this project — catalogs from other projects 404.
+            </p>
+
+            <h2>Members</h2>
+            <p>
+                Exactly one role per (project, user): Developer, DevOps, or Admin. They
+                are not nested. You place existing team users. Last explicit project admin
+                may be removed only if at least one Team admin still covers the team.
+                Removing someone writes audit snapshots (user id, email, display name)
+                before membership rows disappear. History UI never requires the person to
+                still be a member.
+            </p>
+
+            <h2>Production promote and approve</h2>
+            <p>
+                Production RequiresApproval. You see Production in the promote wizard.
+                Approve and reject are ProjectAdmin on Web and API. DevOps cannot complete
+                those actions even if a client posts the form. Rejection archives the
+                target deployment.
+            </p>
+
+            <h2>What you still operate</h2>
+            <p>
+                Connections, deployments, schedules, agents, Git remotes, API keys, retry,
+                and cone recovery. Interactive SQL may use any EnvironmentKind. Prefer
+                not to treat Production preview as a substitute for a deployment run.
+            </p>
+        </div>
+    </div>
+</DocsLayout>

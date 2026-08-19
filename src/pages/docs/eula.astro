@@ -1,0 +1,65 @@
+---
+import DocsLayout from "../../layouts/docs.astro";
+---
+
+<DocsLayout title="Terms of Use — Querial">
+    <div class="space-y-8">
+        <div>
+            <h1 class="text-3xl md:text-4xl font-bold">Terms of Use</h1>
+            <p class="text-muted-foreground mt-1">Last updated: August 2026</p>
+        </div>
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+            <h2>1. Acceptance</h2>
+            <p>
+                These Terms govern your use of this documentation site and of Querial
+                software as provided to you by the organization that hosts an instance
+                (the “Instance Operator”). By accessing the site or using an instance,
+                you agree to these Terms. If you do not agree, do not use them. For data
+                handling, see the
+                <a href="/docs/privacy" class="text-link hover:underline">Privacy Policy</a>.
+            </p>
+
+            <h2>2. What Querial is</h2>
+            <p>
+                Querial is a self-hosted, SQL-native control plane for designing,
+                versioning, deploying, and operating database pipelines against
+                PostgreSQL, SQL Server, and MySQL targets. It is not a hosted SaaS
+                operated from this website, a replacement database, a no-code designer,
+                or a general-purpose workflow engine.
+            </p>
+
+            <h2>3. Your content and SQL</h2>
+            <p>
+                Pipeline SQL, parameters, artifacts, and target data remain the
+                responsibility of the Instance Operator and of the users they invite.
+                You must not place secrets in packages, Git trees, logs, or SqlAssist
+                prompts. Published versions are immutable; operators deploy versions,
+                not ad-hoc edits on production.
+            </p>
+
+            <h2>4. Accounts and roles</h2>
+            <p>
+                Access is granted by the Instance Operator through Setup, invite, or
+                user create. Pending invitees cannot sign in until they set a password.
+                Roles (Developer, DevOps, Project admin, Team admin, Platform admin)
+                limit what you can design, operate, or administer. Circumventing those
+                gates — including forged cookies or keys from another project — is
+                prohibited.
+            </p>
+
+            <h2>5. Disclaimer</h2>
+            <p>
+                Software and documentation are provided as-is, without warranty of
+                merchantability or fitness for a particular purpose, to the extent
+                permitted by law. Pipeline execution can change data on target
+                databases you configure. Bounded SQL preview is not a production run.
+            </p>
+
+            <h2>6. Changes</h2>
+            <p>
+                The Instance Operator may update software and these Terms. Continued
+                use after notice constitutes acceptance of the updated Terms.
+            </p>
+        </div>
+    </div>
+</DocsLayout>

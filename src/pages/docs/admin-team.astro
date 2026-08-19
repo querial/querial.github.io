@@ -1,0 +1,67 @@
+---
+import DocsLayout from "../../layouts/docs.astro";
+---
+
+<DocsLayout title="Projects, invite, and Access Inspector — Querial">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-indigo-on-dark">For Team admins</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Projects, invite, and Access Inspector</h1>
+        </div>
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+            <p>
+                Presence on the team is membership. The only team role to pick is Team
+                admin (a flag). You create and archive projects in <strong class="text-foreground">that team only</strong>.
+                You are treated as Project admin on every project in the team. If a
+                department does not want that inherit, they split into two teams.
+            </p>
+
+            <h2>Administration shell</h2>
+            <p>
+                Footer switches Workspace ↔ Administration. Administration dashboard is
+                the current team: counts, pending invites, recent failed runs, create-project
+                CTA. Switching team reloads a clean home. Developers hitting /Admin are
+                redirected to Workspace with a toast.
+            </p>
+            <p>
+                Creating a team does not auto-seed a project (Platform admin does team
+                create). An empty team is valid. Switching to it clears ProjectId. Workspace
+                for you then offers Create project; a member with no placement sees “ask a
+                team admin”.
+            </p>
+
+            <h2>Invite and add</h2>
+            <p>
+                Invite creates the Identity user immediately (unusable password,
+                EmailConfirmed false), assigns team and optional project memberships in
+                the same transaction, then emails a hashed single-use token. Accept only
+                sets the password. SMTP must be configured; invite send fails closed if
+                mail cannot be sent. Pending invitees cannot sign in. Roles may still be
+                edited while pending.
+            </p>
+            <p>
+                Existing confirmed users are added: memberships apply now, notification
+                email, no accept. You cannot grant Platform admin or invite another team
+                (including a second team in the same request). Grant ceiling is enforced
+                even if the picker UI were wrong.
+            </p>
+            <p>
+                Remove from team cascades: project memberships in that team's projects
+                go away. Other teams and the login stay. If the user is still pending and
+                has no remaining teams and is not Platform admin, the pending user is
+                revoked. Confirmed users with zero teams get the empty-state page, not
+                account deletion.
+            </p>
+            <p>
+                Cannot remove or demote the last enabled Team admin of a team.
+            </p>
+
+            <h2>Access Inspector</h2>
+            <p>
+                Read-only effective-access explainability for Platform admin and Team
+                admin (team-scoped). Pickers use searchable overlays. It does not edit
+                grants.
+            </p>
+        </div>
+    </div>
+</DocsLayout>

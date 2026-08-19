@@ -1,0 +1,64 @@
+---
+import DocsLayout from "../../layouts/docs.astro";
+---
+
+<DocsLayout title="Packages — Querial">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-indigo-on-dark">For Developers</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Packages</h1>
+        </div>
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+            <p>
+                A package is a canonical file tree, not a blob of GUIDs.
+                <code class="text-foreground">querial.package.yaml</code> must contain
+                <code class="text-foreground">format: querial.package/v1</code>.
+            </p>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>querial.package.yaml
+connections/catalog.yaml
+pipelines/
+  &lt;pipeline.code&gt;/
+    pipeline.yaml
+    README.md                 # optional
+    steps/*.sql
+    migrations/*.sql</code></pre>
+
+            <h2>Codes are identity</h2>
+            <p>
+                Import creates database GUIDs. Never put connection strings, passwords,
+                tokens, or ciphertext in the package. <code class="text-foreground">connections/catalog.yaml</code>
+                lists logical stubs: name, provider, description. Allowed providers in v1:
+                postgresql, sqlserver, mysql. If a stub is unresolved at import, materialization
+                is blocked and the connection wizard opens.
+            </p>
+            <p>
+                Creating stubs during import is an operator/admin action. Developers may
+                export and import with remap or require-existing resolutions; creating
+                unresolved endpoints is not this role.
+            </p>
+
+            <h2>Edges and retry maps</h2>
+            <p>
+                In <code class="text-foreground">pipeline.yaml</code>, <code class="text-foreground">to</code>
+                depends on <code class="text-foreground">from</code>. Additive
+                <code class="text-foreground">retry</code> maps are allowed; omit means product
+                defaults (<code class="text-foreground">retry_max_attempts = 1</code> is off).
+                There is no format v2 bump for those fields.
+            </p>
+
+            <h2>Where import lands</h2>
+            <p>
+                Import always materializes into the <strong class="text-foreground">current project</strong>.
+                It does not copy pipelines into another project. There is no cross-project
+                sharing in v1 — copy means export then import.
+            </p>
+
+            <h2>Git</h2>
+            <p>
+                Packages are designed to live in ordinary Git. Publication from the product
+                is optional. Core operation never requires a remote. Operators configure
+                remotes; this role authors the tree.
+            </p>
+        </div>
+    </div>
+</DocsLayout>

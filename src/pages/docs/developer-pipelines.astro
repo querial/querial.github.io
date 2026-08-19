@@ -1,0 +1,70 @@
+---
+import DocsLayout from "../../layouts/docs.astro";
+---
+
+<DocsLayout title="Pipelines and the DAG designer — Querial">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-indigo-on-dark">For Developers</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Pipelines and the DAG designer</h1>
+        </div>
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+            <h2>Draft versus publish</h2>
+            <p>
+                Create a pipeline and edit steps, SQL, parameters, and edges on the
+                draft. The DAG designer is a visual graph editor (drag/drop, connections,
+                auto-layout, zoom, inspector). Saves debounce after idle and also honor
+                Ctrl+S. Cycle detection runs before edges persist — an invalid graph
+                does not save.
+            </p>
+            <p>
+                Publish freezes an immutable version: SQL, edges, layouts, retry
+                defaults, and failure policy together. Further edits go to a new draft
+                or a new version. You never deploy a live draft. A published version
+                opens read-only in the designer.
+            </p>
+
+            <h2>Edges</h2>
+            <p>
+                In the designer and in package YAML, <code class="text-foreground">to</code> depends on
+                <code class="text-foreground">from</code>. Fan-out and fan-in are supported.
+                Execution order is derived from the graph, not from a handwritten serial list.
+                Legacy ordered pipelines import as sequential edges so older designs still run
+                after DAG execution is enabled.
+            </p>
+
+            <h2>Structural roots</h2>
+            <p>
+                A step is a start node if and only if it has no incoming edges. There is
+                no <code class="text-foreground">is_start</code> flag and no trigger-time
+                “run from step X”. Publish warns when root count is greater than one and
+                requires explicit confirmation. The designer and run visualizer badge
+                those roots. Run plans snapshot <code class="text-foreground">root_step_codes</code>
+                at create time.
+            </p>
+
+            <h2>Failure policy</h2>
+            <p>
+                Pipeline draft/version stores a required default
+                <code class="text-foreground">dag_failure_policy</code>:
+                <code class="text-foreground">fail_fast</code> or
+                <code class="text-foreground">continue_independent</code>. A deployment may
+                set an optional override; override wins when the run plan is created and
+                is snapshotted. Only a step whose snapshotted step policy is
+                <code class="text-foreground">fail_pipeline</code> trips the run-wide
+                fail-fast latch. A step with <code class="text-foreground">continue</code>
+                that fails skips dependents that require success; it does not poison
+                independent branches. Skipped, cancelled, and abandoned terminals never
+                trip fail-fast.
+            </p>
+
+            <h2>Step create/edit</h2>
+            <p>
+                Metadata stays in Bootstrap modals. SQL may expand into Monaco and
+                “Open in SQL Editor” without turning the whole designer into a full page.
+                Sync hidden fields before submit. Uniqueness that would otherwise surface
+                as an opaque unique violation is pre-checked.
+            </p>
+        </div>
+    </div>
+</DocsLayout>

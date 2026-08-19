@@ -1,0 +1,79 @@
+---
+import Layout from "../layouts/main.astro";
+import { BookOpen, Users } from "lucide-react";
+
+const title = "Contact — Querial";
+---
+
+<Layout {title}>
+    <section class="py-20 md:py-32">
+        <div class="container mx-auto px-4">
+            <div class="max-w-3xl mx-auto">
+                <div class="text-center space-y-4 mb-12">
+                    <h1 class="text-4xl md:text-5xl font-bold">
+                        Get in{" "}
+                        <span
+                            class="bg-gradient-to-r from-querial-indigo to-querial-indigo-on-dark bg-clip-text text-transparent"
+                        >
+                            touch
+                        </span>
+                    </h1>
+                    <p class="text-lg text-muted-foreground max-w-xl mx-auto">
+                        Querial is self-hosted. Day-to-day questions belong with
+                        your Platform admin or Team admin. Product behavior is
+                        documented here by persona.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <a
+                        href="/docs"
+                        class="group p-8 rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg shadow-querial-indigo/5 hover:border-querial-indigo/50 transition-colors"
+                    >
+                        <div class="inline-flex p-3 rounded-xl bg-gradient-to-br from-querial-indigo to-querial-indigo-on-dark mb-4">
+                            <BookOpen class="h-6 w-6 text-white" />
+                        </div>
+                        <h2 class="text-xl font-semibold mb-2">
+                            Browse the docs
+                        </h2>
+                        <p class="text-muted-foreground mb-4">
+                            Developers, DevOps, and Platform, Team, and Project
+                            admins each have their own guides — including what
+                            each role cannot do.
+                        </p>
+                        <span class="text-sm font-medium text-primary group-hover:underline">
+                            Open the docs →
+                        </span>
+                    </a>
+
+                    <a
+                        href="/docs#platform-admins"
+                        class="group p-8 rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg shadow-querial-indigo/5 hover:border-querial-indigo/50 transition-colors"
+                    >
+                        <div class="inline-flex p-3 rounded-xl bg-gradient-to-br from-querial-sky to-querial-indigo mb-4">
+                            <Users class="h-6 w-6 text-white" />
+                        </div>
+                        <h2 class="text-xl font-semibold mb-2">
+                            Ask your Platform admin
+                        </h2>
+                        <p class="text-muted-foreground mb-4">
+                            Invites, SMTP, AI configuration, and break-glass
+                            live in Administration. Pending invitees cannot
+                            sign in until they set a password.
+                        </p>
+                        <span class="text-sm font-medium text-primary group-hover:underline">
+                            Platform admin guide →
+                        </span>
+                    </a>
+                </div>
+
+                <p class="text-center text-sm text-muted-foreground mt-10">
+                    Prefer self-serve? Read the{" "}
+                    <a href="/about" class="text-link hover:underline">story behind Querial</a>
+                    {" "}or the{" "}
+                    <a href="/#faq" class="text-link hover:underline">FAQ</a>.
+                </p>
+            </div>
+        </div>
+    </section>
+</Layout>

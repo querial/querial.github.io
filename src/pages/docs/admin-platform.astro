@@ -1,0 +1,65 @@
+---
+import DocsLayout from "../../layouts/docs.astro";
+---
+
+<DocsLayout title="Setup, users, teams, and AI — Querial">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-sky">For Platform admins</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Setup, users, teams, and AI</h1>
+        </div>
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+            <h2>Empty instance Setup</h2>
+            <p>
+                On first visit with an empty user table, complete Setup to create the
+                initial Platform admin. That user is placed on the seeded system team and
+                system project (Team admin + project Admin). Optional “Team name” on Setup
+                renames the system team's display name in the same transaction; the code
+                <code class="text-foreground">default</code> does not change and the system
+                team/project cannot be deleted. Later teams do not auto-seed a project.
+            </p>
+            <p>
+                If the system team is still named Default after login, a dismissible banner
+                can link to team settings. It is not a blocking wizard.
+            </p>
+
+            <h2>Users versus invite</h2>
+            <p>
+                Create user with a temporary password remains a bootstrap path you own.
+                Invite is the human path: creates pending login + memberships, email token,
+                accept is password-only. You may invite to one or more teams in a single
+                invite, each with its own Team admin flag and project roles. Only you may
+                grant Platform admin. Cannot remove or demote the last enabled Platform admin.
+            </p>
+            <p>
+                Identity Developer is retired. Users UI is Platform admin versus standard
+                user. Forged team/project cookies are ignored. Authorization is enforced
+                in the UI and on the API.
+            </p>
+
+            <h2>Teams</h2>
+            <p>
+                You create and archive teams. Optional first project fields on the create
+                modal run in the same transaction. Left blank, land on Administration with
+                an empty team. You may create a project in any team. You may act in any
+                team or project without membership, but the UI still picks a current
+                project — there is no “view all projects on one list” in v1.
+            </p>
+
+            <h2>AI configuration</h2>
+            <p>
+                Instance AI settings live in Administration. SqlAssist remains draft-only
+                regardless of provider. Embeddings live on PostgreSQL 18 with pgvector.
+                Structured logging and OpenTelemetry must never include full connection
+                strings or decrypted secrets.
+            </p>
+
+            <h2>Break-glass</h2>
+            <p>
+                You still pick a current project in the footer. Superuser does not mean a
+                merged catalog. API keys never inherit this role. Worker and scheduler
+                hosts are trusted control-plane processes and are not user sessions.
+            </p>
+        </div>
+    </div>
+</DocsLayout>

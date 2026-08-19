@@ -1,0 +1,245 @@
+---
+import DocsLayout from "../../layouts/docs.astro";
+
+const card =
+    "doc-card group flex items-center gap-4 p-4 rounded-xl border border-border/50 bg-card/50 hover:shadow-md transition-all";
+---
+
+<DocsLayout title="Querial Documentation">
+    <div class="space-y-8">
+        <div>
+            <h1 class="text-3xl md:text-4xl font-bold">Documentation</h1>
+            <p class="text-muted-foreground mt-2">
+                Guides follow the duties the product actually enforces:
+                Developer, DevOps, Project admin, Team admin, and Platform
+                admin. Isolation is the project. Developer and DevOps are not a
+                hierarchy.
+            </p>
+        </div>
+
+        <div class="relative">
+            <input
+                type="text"
+                id="docs-search"
+                placeholder="Search documentation..."
+                class="w-full rounded-xl border border-border/50 bg-muted/30 px-4 py-3 pl-10 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-querial-indigo-on-dark/50"
+            />
+            <svg
+                class="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground/50"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="2"
+                stroke="currentColor"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                ></path>
+            </svg>
+        </div>
+
+        <div class="space-y-4" data-docs-category>
+            <h2 class="text-xl font-semibold flex items-center gap-2">
+                <span class="w-1.5 h-6 rounded-full bg-querial-indigo-on-dark"></span>
+                Start here
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <a href="/docs/concepts" class={`${card} hover:border-querial-indigo-on-dark/30`} data-doc-title="Core concepts pipeline version deployment run agent project">
+                    <div class="w-10 h-10 rounded-lg bg-querial-indigo/15 flex items-center justify-center shrink-0">
+                        <span class="text-querial-indigo-on-dark text-lg font-bold">C</span>
+                    </div>
+                    <div>
+                        <p class="font-medium text-sm group-hover:text-querial-indigo-on-dark transition-colors">Core concepts</p>
+                        <p class="text-xs text-muted-foreground">Terminology, shells, and rules the product does not bend.</p>
+                    </div>
+                </a>
+                <a href="/docs/architecture" class={`${card} hover:border-querial-indigo-on-dark/30`} data-doc-title="Architecture control plane workers artifacts">
+                    <div class="w-10 h-10 rounded-lg bg-querial-indigo/15 flex items-center justify-center shrink-0">
+                        <span class="text-querial-indigo-on-dark text-lg font-bold">A</span>
+                    </div>
+                    <div>
+                        <p class="font-medium text-sm group-hover:text-querial-indigo-on-dark transition-colors">Architecture</p>
+                        <p class="text-xs text-muted-foreground">Control plane, targets, dual-path execution, optional Git.</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <div class="space-y-4" data-docs-category id="developers">
+            <h2 class="text-xl font-semibold flex items-center gap-2">
+                <span class="w-1.5 h-6 rounded-full bg-querial-indigo-on-dark"></span>
+                For Developers
+            </h2>
+            <p class="text-sm text-muted-foreground -mt-2">
+                Project role. CanDesign. Workspace. Development SQL only. Cannot retry, deploy, or promote Production.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <a href="/docs/developer-workspace" class={`${card} hover:border-querial-indigo-on-dark/30`} data-doc-title="Developer workspace getting started sidebar project">
+                    <div>
+                        <p class="font-medium text-sm group-hover:text-querial-indigo-on-dark">Workspace for Developers</p>
+                        <p class="text-xs text-muted-foreground">Current project, empty states, what the nav hides.</p>
+                    </div>
+                </a>
+                <a href="/docs/developer-pipelines" class={`${card} hover:border-querial-indigo-on-dark/30`} data-doc-title="Pipelines DAG designer publish edges roots">
+                    <div>
+                        <p class="font-medium text-sm group-hover:text-querial-indigo-on-dark">Pipelines and the DAG designer</p>
+                        <p class="text-xs text-muted-foreground">Drafts, edges, publish, structural roots, failure policy.</p>
+                    </div>
+                </a>
+                <a href="/docs/developer-sql" class={`${card} hover:border-querial-indigo-on-dark/30`} data-doc-title="SQL workspace Monaco schema SqlAssist steps migrations">
+                    <div>
+                        <p class="font-medium text-sm group-hover:text-querial-indigo-on-dark">SQL workspace, steps, and migrations</p>
+                        <p class="text-xs text-muted-foreground">Monaco, schema cache, SqlAssist drafts, handler types.</p>
+                    </div>
+                </a>
+                <a href="/docs/developer-packages" class={`${card} hover:border-querial-indigo-on-dark/30`} data-doc-title="Packages export import YAML codes">
+                    <div>
+                        <p class="font-medium text-sm group-hover:text-querial-indigo-on-dark">Packages</p>
+                        <p class="text-xs text-muted-foreground">querial.package/v1 trees. Codes are identity. No secrets.</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <div class="space-y-4" data-docs-category id="devops">
+            <h2 class="text-xl font-semibold flex items-center gap-2">
+                <span class="w-1.5 h-6 rounded-full bg-querial-sky"></span>
+                For DevOps
+            </h2>
+            <p class="text-sm text-muted-foreground -mt-2">
+                Project role. CanOperate. Any environment kind for SQL. Staging promote. Cannot approve Production. Can retry.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <a href="/docs/devops-connections" class={`${card} hover:border-querial-sky/30`} data-doc-title="Connections logical endpoints environment kind secrets">
+                    <div>
+                        <p class="font-medium text-sm group-hover:text-querial-sky">Connections and environments</p>
+                        <p class="text-xs text-muted-foreground">Logical name + provider; encrypted endpoints per kind.</p>
+                    </div>
+                </a>
+                <a href="/docs/devops-deployments" class={`${card} hover:border-querial-sky/30`} data-doc-title="Deployments promotion staging production parameters">
+                    <div>
+                        <p class="font-medium text-sm group-hover:text-querial-sky">Deployments and promotion</p>
+                        <p class="text-xs text-muted-foreground">Bind a version. Promote clones SQL; it never rewrites it.</p>
+                    </div>
+                </a>
+                <a href="/docs/devops-scheduling" class={`${card} hover:border-querial-sky/30`} data-doc-title="Scheduling cron runs visualizer">
+                    <div>
+                        <p class="font-medium text-sm group-hover:text-querial-sky">Scheduling and runs</p>
+                        <p class="text-xs text-muted-foreground">Durable scheduler, full-graph plans, run visualizer.</p>
+                    </div>
+                </a>
+                <a href="/docs/devops-agents" class={`${card} hover:border-querial-sky/30`} data-doc-title="Agents pools leases API keys Git">
+                    <div>
+                        <p class="font-medium text-sm group-hover:text-querial-sky">Agents, API keys, and Git</p>
+                        <p class="text-xs text-muted-foreground">Pull leases. Keys hashed and project-bound. Git optional.</p>
+                    </div>
+                </a>
+                <a href="/docs/devops-artifacts" class={`${card} hover:border-querial-sky/30`} data-doc-title="Artifacts Parquet DuckDB Staged Database SQL">
+                    <div>
+                        <p class="font-medium text-sm group-hover:text-querial-sky">Artifacts and Staged Database SQL</p>
+                        <p class="text-xs text-muted-foreground">Parquet, S3 or local, embedded DuckDB, the only sink.</p>
+                    </div>
+                </a>
+                <a href="/docs/devops-retry" class={`${card} hover:border-querial-sky/30`} data-doc-title="Retry failed cone abandoned unsafe_for_auto_retry">
+                    <div>
+                        <p class="font-medium text-sm group-hover:text-querial-sky">Retry and failed-cone recovery</p>
+                        <p class="text-xs text-muted-foreground">In-run retry vs cone. Developers cannot call these APIs.</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <div class="space-y-4" data-docs-category id="project-admins">
+            <h2 class="text-xl font-semibold flex items-center gap-2">
+                <span class="w-1.5 h-6 rounded-full bg-querial-indigo"></span>
+                For Project admins
+            </h2>
+            <a href="/docs/admin-project" class={`${card} hover:border-querial-indigo/30 md:max-w-xl`} data-doc-title="Project admin members production promote approve">
+                <div>
+                    <p class="font-medium text-sm group-hover:text-querial-indigo">Project membership and Production</p>
+                    <p class="text-xs text-muted-foreground">Place existing team users. Approve Production. Cannot invite new logins.</p>
+                </div>
+            </a>
+        </div>
+
+        <div class="space-y-4" data-docs-category id="team-admins">
+            <h2 class="text-xl font-semibold flex items-center gap-2">
+                <span class="w-1.5 h-6 rounded-full bg-querial-indigo-on-dark"></span>
+                For Team admins
+            </h2>
+            <a href="/docs/admin-team" class={`${card} hover:border-querial-indigo-on-dark/30 md:max-w-xl`} data-doc-title="Team admin projects invite inspector inherit">
+                <div>
+                    <p class="font-medium text-sm group-hover:text-querial-indigo-on-dark">Projects, invite, and Access Inspector</p>
+                    <p class="text-xs text-muted-foreground">Project factory, team-scoped invite, inherit Project admin, read-only inspector.</p>
+                </div>
+            </a>
+        </div>
+
+        <div class="space-y-4" data-docs-category id="platform-admins">
+            <h2 class="text-xl font-semibold flex items-center gap-2">
+                <span class="w-1.5 h-6 rounded-full bg-querial-sky"></span>
+                For Platform admins
+            </h2>
+            <a href="/docs/admin-platform" class={`${card} hover:border-querial-sky/30 md:max-w-xl`} data-doc-title="Platform admin setup users teams AI SMTP">
+                <div>
+                    <p class="font-medium text-sm group-hover:text-querial-sky">Setup, users, teams, and AI</p>
+                    <p class="text-xs text-muted-foreground">Empty-instance Setup, Identity, SMTP fail-closed invites, AI config.</p>
+                </div>
+            </a>
+        </div>
+
+        <div class="space-y-4" data-docs-category>
+            <h2 class="text-xl font-semibold flex items-center gap-2">
+                <span class="w-1.5 h-6 rounded-full bg-muted-foreground"></span>
+                Legal
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <a href="/docs/privacy" class={`${card} hover:border-querial-sky/30`} data-doc-title="Privacy Policy self-hosted control plane">
+                    <div>
+                        <p class="font-medium text-sm group-hover:text-link">Privacy Policy</p>
+                        <p class="text-xs text-muted-foreground">What a self-hosted control plane stores, and what it does not send.</p>
+                    </div>
+                </a>
+                <a href="/docs/eula" class={`${card} hover:border-querial-sky/30`} data-doc-title="Terms of Use">
+                    <div>
+                        <p class="font-medium text-sm group-hover:text-link">Terms of Use</p>
+                        <p class="text-xs text-muted-foreground">Terms for using Querial.</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document
+            .getElementById("docs-search")
+            ?.addEventListener("input", (e) => {
+                const query = (
+                    e.target as HTMLInputElement
+                ).value.toLowerCase();
+                document.querySelectorAll(".doc-card").forEach((card) => {
+                    const title =
+                        card.getAttribute("data-doc-title")?.toLowerCase() ||
+                        "";
+                    const desc =
+                        card
+                            .querySelector("p:last-child")
+                            ?.textContent?.toLowerCase() || "";
+                    const match =
+                        !query || title.includes(query) || desc.includes(query);
+                    (card as HTMLElement).style.display = match ? "" : "none";
+                });
+                document
+                    .querySelectorAll("[data-docs-category]")
+                    .forEach((cat) => {
+                        const visibleCards = cat.querySelectorAll(
+                            '.doc-card:not([style*="display: none"])',
+                        );
+                        (cat as HTMLElement).style.display =
+                            visibleCards.length > 0 ? "" : "none";
+                    });
+            });
+    </script>
+</DocsLayout>

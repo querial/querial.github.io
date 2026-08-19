@@ -1,0 +1,47 @@
+---
+import DocsLayout from "../../layouts/docs.astro";
+---
+
+<DocsLayout title="Deployments and promotion — Querial">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-sky">For DevOps</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Deployments and promotion</h1>
+        </div>
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+            <p>
+                Design is not deployment. Bind a published version to an EnvironmentKind,
+                map logical connections (already on the steps) to this project's endpoints,
+                set parameter values, optionally attach a schedule and agent-pool bindings.
+                Parameters are per deployment — do not bake production secrets into step SQL.
+            </p>
+
+            <h2>Promotion</h2>
+            <p>
+                Promotion clones the exact pipeline version, package hash, and Git commit
+                if present. It never modifies SQL content. Source deployment parameters
+                clone to the target; secrets stay ciphertext, not decrypted in the wizard.
+            </p>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Development and Staging: DevOps may promote. Auto-approval when the kind does not require approval.</li>
+                <li>Production: RequiresApproval. DevOps sees development + staging in the wizard; Production is hidden unless CanAdminProject. Even if the HTTP attribute were wrong, PromotionService fails closed for DevOps on Production promote and approve.</li>
+                <li>Pending promotions are approved or rejected by Project admin (including Team-admin inherit and Platform admin). Rejection archives the target deployment and records the actor snapshot.</li>
+            </ul>
+
+            <h2>Bindings</h2>
+            <p>
+                Per-step deployment bindings carry agent pool and assignment mode
+                (automatic, specific agent, pool, tag expression, round robin). They do
+                not remap connections. Pool assignment is snapshotted when the run plan
+                is created.
+            </p>
+
+            <h2>Multi-tenant pattern</h2>
+            <p>
+                The same version can run for hundreds of tenant databases. Each
+                deployment has independent run history. A failure on tenant A does not
+                mutate the version used by tenant B.
+            </p>
+        </div>
+    </div>
+</DocsLayout>

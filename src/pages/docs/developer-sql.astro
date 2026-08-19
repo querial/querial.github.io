@@ -1,0 +1,78 @@
+---
+import DocsLayout from "../../layouts/docs.astro";
+---
+
+<DocsLayout title="SQL workspace, steps, and migrations — Querial">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-indigo-on-dark">For Developers</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">SQL workspace, steps, and migrations</h1>
+        </div>
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+            <h2>Environment gate</h2>
+            <p>
+                Interactive SQL and schema refresh for this role always resolve the
+                <strong class="text-foreground">Development</strong> endpoint. The UI shows a
+                Development badge, not an environment picker. Posting
+                <code class="text-foreground">environmentKind=production</code> is rejected
+                in the controller and again in the SQL service before target resolution.
+                Operators (CanOperate) may switch Staging or Production; a non-Development
+                schema refresh overwrites the one snapshot per connection.
+            </p>
+
+            <h2>Monaco and the schema cache</h2>
+            <p>
+                The editor is vendored locally. Dialect follows the logical connection's
+                provider: PostgreSQL, SQL Server, or MySQL. Completion uses a fetched,
+                normalized catalog — schemas, tables, views, columns, keys, indexes,
+                routines — plus pipeline parameter names. Pipeline execution must not
+                depend on the cache being current. Parser or model “validation” is never
+                presented as a guarantee that production SQL is correct.
+            </p>
+            <p>
+                The standalone workspace supports bounded preview with controlled
+                parameters, a result grid, explain-plan retrieval where the provider
+                supports it, and read-only diffs between versions. Bounded preview is
+                not a production run.
+            </p>
+
+            <h2>SqlAssist</h2>
+            <p>
+                Assistance can propose SQL against the cached schema and the pipeline
+                contract. It never auto-publishes. A human reviews, edits, and publishes.
+                Embeddings and chat history live on the control database (PostgreSQL 18
+                with pgvector). For artifact sinks, assistance must emit logical tokens
+                such as <code class="text-foreground">{"{{ stage.name }}"}</code>, never
+                physical temp table names or secrets.
+            </p>
+
+            <h2>Step handlers</h2>
+            <div class="overflow-x-auto not-prose">
+                <table class="w-full text-sm">
+                    <thead><tr class="border-b border-border text-left"><th class="py-2 pr-4">Handler</th><th class="py-2">Role</th></tr></thead>
+                    <tbody class="text-muted-foreground">
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 text-foreground">sql_command / sql_query / stored_procedure / validation_query / database-sql</td><td class="py-2">Dialect SQL on the bound target. Default unsafe for auto-retry.</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 text-foreground">database-query-to-parquet</td><td class="py-2">Capture a result set as Parquet. Default safe for auto-retry.</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 text-foreground">artifact-sql</td><td class="py-2">DuckDB SQL over Parquet inputs on an eligible agent. Default safe.</td></tr>
+                        <tr><td class="py-2 pr-4 text-foreground">staged-database-sql</td><td class="py-2">The only database sink. Bulk-load, then your merge SQL. Default unsafe for auto-retry. No ArtifactToTable.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>
+                Do not use Dapper for row-by-row bulk loading. Sinks use provider bulk
+                APIs (COPY, SqlBulkCopy, MySqlBulkCopy) then developer SQL on the same
+                connection/transaction. You never see the physical staging table name;
+                tokens are substituted.
+            </p>
+
+            <h2>Migrations</h2>
+            <p>
+                Ordered, coded SQL files. After apply, the <strong class="text-foreground">target</strong>
+                records what ran. Restoring a database from backup does not confuse
+                Querial: history on that database is the truth. Apply policy can be
+                Manual, OnDeploy, or BeforeRun. New publishes require every step and
+                migration to be bound to a logical connection.
+            </p>
+        </div>
+    </div>
+</DocsLayout>

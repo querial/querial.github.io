@@ -1,0 +1,42 @@
+---
+import DocsLayout from "../../layouts/docs.astro";
+---
+
+<DocsLayout title="Artifacts and Staged Database SQL — Querial">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-sky">For DevOps</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Artifacts and Staged Database SQL</h1>
+        </div>
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+            <p>
+                Cross-connection and large intermediates cannot travel through messages or
+                in-memory step payloads. Artifacts are first-class outputs with schema
+                fingerprint, checksum, retention, producer, and sensitivity. Parquet is the
+                tabular baseline. JSON/text/SQL/diagnostics may also be stored.
+            </p>
+
+            <h2>Store</h2>
+            <p>
+                Local filesystem for development. S3-compatible object storage for the
+                production baseline. Both implement the same store contracts. New object
+                keys prefix the project id; existing files keep their stored URI.
+            </p>
+
+            <h2>Produce → transform → consume</h2>
+            <ol class="list-decimal pl-5 space-y-2">
+                <li><strong class="text-foreground">Produce</strong> — DatabaseQueryToParquet (or similar) runs SQL on a source connection and writes a file. Metadata records run, step, and location.</li>
+                <li><strong class="text-foreground">Transform</strong> — an eligible agent runs DuckDB SQL against one or more Parquet inputs and writes a new artifact.</li>
+                <li><strong class="text-foreground">Consume</strong> — Staged Database SQL creates staging tables, bulk-loads with provider-native APIs, then runs developer-authored SQL that joins stages using logical symbols. There is no ArtifactToTable mapping; configuration that implies one-to-one automatic table copy is rejected.</li>
+            </ol>
+
+            <h2>Cross-connection</h2>
+            <p>
+                Fan-out from one source to SQL Server and PostgreSQL is a supported shape:
+                each destination is a separate connection and sink step. There are no
+                distributed transactions across those connections. Artifact-aware scheduling
+                avoids starting a sink when the Parquet file is not ready.
+            </p>
+        </div>
+    </div>
+</DocsLayout>

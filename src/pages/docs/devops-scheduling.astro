@@ -1,0 +1,55 @@
+---
+import DocsLayout from "../../layouts/docs.astro";
+---
+
+<DocsLayout title="Scheduling and runs — Querial">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-sky">For DevOps</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Scheduling and runs</h1>
+        </div>
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+            <p>
+                Querial includes a first-party durable scheduler. You do not need OS cron
+                for production. Friendly presets cover common cadences; advanced mode
+                accepts full cron. Help for expressions opens in a markdown modal.
+            </p>
+
+            <h2>What the scheduler does</h2>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Persists due work in the control database and recovers after process restart.</li>
+                <li>Creates runs when a schedule fires.</li>
+                <li>Can wait on upstream artifacts before planning downstream steps (artifact-aware scheduling).</li>
+            </ul>
+            <p>
+                The scheduler does <strong class="text-foreground">not</strong> execute SQL.
+                Registered agents pull leases for step work. Until DAG and agent flags are
+                on, legacy serial execution remains available.
+            </p>
+
+            <h2>Full-graph plans</h2>
+            <p>
+                Manual, scheduled, retry, and backfill runs always <strong class="text-foreground">plan</strong>
+                the full published version graph. On those default paths every planned node
+                is <strong class="text-foreground">executed</strong>. Cheap repeats are
+                author-owned via idempotent SQL (MERGE, watermarks, version guards). Querial
+                does not skip nodes that “look already done” for those triggers. Failed-cone
+                recovery is a separate operator action — see Retry.
+            </p>
+
+            <h2>Concurrency</h2>
+            <p>
+                Pools, per-connection limits, and queue aging keep one noisy tenant from
+                starving others. Control-plane timestamps are UTC; the Web UI shows the
+                user's preferred timezone.
+            </p>
+
+            <h2>Run visualizer</h2>
+            <p>
+                The visualizer is the published graph with live status (including SSE).
+                Root nodes are badged. Retry actions live on run details and the schedule
+                run list, not on the visualizer canvas.
+            </p>
+        </div>
+    </div>
+</DocsLayout>

@@ -1,0 +1,94 @@
+---
+import Layout from '../layouts/main.astro';
+---
+
+<Layout title="About — Querial">
+	<section class="py-20 md:py-32">
+		<div class="container mx-auto px-4">
+			<div class="max-w-4xl mx-auto">
+				<div class="text-center space-y-4 mb-12">
+					<h1 class="text-4xl md:text-6xl font-bold">
+						The idea behind{" "}
+						<span class="bg-gradient-to-r from-querial-indigo to-querial-indigo-on-dark bg-clip-text text-transparent">
+							Querial
+						</span>
+					</h1>
+					<p class="text-xl text-muted-foreground max-w-2xl mx-auto">
+						A control plane for SQL that already has to run on many databases,
+						not a new language for writing it.
+					</p>
+				</div>
+
+				<div class="prose prose-lg dark:prose-invert mx-auto max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+					<p>
+						Database teams already know SQL. What they usually lack is one
+						place to version it, bind it to many targets, and prove which run
+						actually happened. Scripts live in shared drives. Migrations live
+						in a different tool. Cron lives on a box nobody wants to patch.
+						Stored procedures drift per tenant. After a restore, nobody can
+						say which Friday script actually applied.
+					</p>
+
+					<blockquote class="not-prose my-10 border-l-2 border-querial-indigo pl-6 py-1">
+						<p class="text-xl md:text-2xl font-medium text-foreground leading-snug">
+							Querial manages SQL rather than replacing it.
+						</p>
+					</blockquote>
+
+					<h2>Design is not deployment</h2>
+					<p>
+						A pipeline is a reusable design: steps, migrations, parameters,
+						and DAG edges. A published version is immutable. A deployment
+						binds that version to an environment kind — Development, Staging,
+						or Production — through logical connections whose endpoints are
+						encrypted per kind. The same version can run for hundreds of
+						tenant databases without copying SQL by hand.
+					</p>
+
+					<h2>Execution is target-local</h2>
+					<p>
+						Steps and migrations run inside each target database. Migration
+						history on that database is authoritative — restoring a clone
+						does not confuse the control plane into guessing. There are no
+						distributed transactions across connections. Large intermediates
+						travel as Parquet artifacts, not as messages.
+					</p>
+
+					<h2>People are isolated by project</h2>
+					<p>
+						Platform, team, and project are three layers. Isolation is the
+						project: pipelines, connections, agents, keys, and runs belong to
+						one project. Developer and DevOps are peer roles, not a ladder.
+						Team admin inherits Project admin on every project in that team.
+						Platform admin is the instance superuser and the only Identity
+						role. Invite creates the login and attaches memberships in the
+						same step; accept only sets a password.
+					</p>
+
+					<h2>Assistance drafts; humans publish</h2>
+					<p>
+						SqlAssist can propose SQL against the cached schema and the
+						pipeline contract. It never auto-publishes. Embeddings live on
+						the control database. A human still owns the SQL that ships.
+					</p>
+				</div>
+
+				<div class="text-center mt-16 pt-12 border-t">
+					<h2 class="text-2xl md:text-3xl font-bold mb-4">Read by persona</h2>
+					<p class="text-muted-foreground mb-6">
+						Guides are split for Developers, DevOps, and Platform, Team, and
+						Project admins.
+					</p>
+					<div class="flex flex-col sm:flex-row gap-4 justify-center">
+						<a href="/docs" class="inline-flex items-center justify-center h-10 px-6 rounded-md bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors">
+							Open the docs
+						</a>
+						<a href="/contact" class="inline-flex items-center justify-center h-10 px-6 rounded-md border bg-background hover:bg-accent hover:text-accent-foreground transition-colors">
+							Contact
+						</a>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+</Layout>

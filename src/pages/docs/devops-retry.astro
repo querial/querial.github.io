@@ -1,0 +1,63 @@
+---
+import DocsLayout from "../../layouts/docs.astro";
+---
+
+<DocsLayout title="Retry and failed-cone recovery — Querial">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-sky">For DevOps</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Retry and failed-cone recovery</h1>
+            <p class="text-muted-foreground mt-2">
+                Same authorization as Retry: DevOps, Project admin, Team-admin inherit, Platform admin. Developer is 403.
+            </p>
+        </div>
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+            <h2>Two layers</h2>
+            <p>
+                <strong class="text-foreground">In-run retry</strong> stays on the same
+                step execution: running → retry_waiting → queued, with backoff
+                <code class="text-foreground">delay = backoff × multiplier^(attempt-1)</code>,
+                capped at 900 seconds. Default <code class="text-foreground">retry_max_attempts = 1</code>
+                means off. Writes are default-unsafe for auto-retry; extracts and artifact-sql
+                are default-safe. Unsafe blocks in-run auto-retry only.
+            </p>
+            <p>
+                <strong class="text-foreground">Failed-cone</strong> is a new run that still
+                <em>plans</em> the full graph, skips <em>execution</em> of source succeeded
+                nodes, and rebinds artifacts. It is not a trigger-time subgraph and not
+                “run from step X”. Full retry remains the UI/API default (<code class="text-foreground">mode=full</code>).
+                There is no auto-cone when in-run attempts exhaust — a human chooses full vs cone.
+            </p>
+
+            <h2>Policy snapshot</h2>
+            <p>
+                Pipeline defaults, optional step override, copied onto step executions at
+                plan create (same snapshot pattern as agent-pool assignment). Publish
+                freezes version defaults. Dual-path: legacy serial uses an inner loop in
+                the serial engine; cone requires DAG execution (and artifact/DuckDB flags
+                when those handlers are in the cone). No extra feature flag.
+            </p>
+
+            <h2>Abandon</h2>
+            <p>
+                Grace first. Then retry_waiting only if attempts remain,
+                retry_on_abandoned is true, and the step is not unsafe. Otherwise terminal
+                abandoned.
+            </p>
+
+            <h2>Artifacts across runs</h2>
+            <p>
+                Cone clones artifact rows into the new run. Resolvers never search other
+                runs. Clones copy sensitivity and retention from the source. Audit payload
+                has mode and counts, not URIs or secrets. Retry stays project-scoped.
+            </p>
+
+            <h2>Where to click</h2>
+            <p>
+                Preview the cone, then Retry / RetryRun, from run details or the schedule
+                run list. Run History index and the visualizer do not expose the button.
+                Missing project returns JSON 400 (not a login challenge) for the AJAX preview.
+            </p>
+        </div>
+    </div>
+</DocsLayout>

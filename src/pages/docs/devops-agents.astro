@@ -1,0 +1,53 @@
+---
+import DocsLayout from "../../layouts/docs.astro";
+---
+
+<DocsLayout title="Agents, API keys, and Git — Querial">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-sky">For DevOps</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Agents, API keys, and Git</h1>
+        </div>
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+            <h2>Agents and pools</h2>
+            <p>
+                Agents are registered processes, not anonymous functions you push a payload
+                to. They start with a stable id, register into a <strong class="text-foreground">project-scoped</strong>
+                pool, advertise capabilities (SQL, DuckDB, artifacts), poll for leases in
+                that project, renew while running, and complete or fail. If an agent dies,
+                the lease expires (after grace) and another eligible agent can take the work.
+            </p>
+            <p>
+                Cron creates runs. Querial owns assignment. Eligible agents run DuckDB
+                embedded — there is no separate DuckDB cluster. Agents do not need Git.
+            </p>
+            <p>
+                These screens require CanOperate. Developers do not see Agents in nav.
+                Control-plane worker hosts remain trusted when registered-agents mode is off.
+            </p>
+
+            <h2>API keys</h2>
+            <p>
+                Keys live under Workers in Workspace, not in Administration. Each key is
+                bound to one project. Prefix <code class="text-foreground">qk_</code>, SHA-256
+                hash at rest, constant-time compare, shown in full once at create. Scopes:
+                trigger_run, view_status, cancel_run, with optional environment restriction.
+                Idempotency keys have a 24-hour TTL. Rate limits and an audit log (IP, action)
+                apply. A key cannot start or inspect another project's runs and cannot act
+                as Platform admin.
+            </p>
+            <p>
+                External trigger, status, and cancel use API-key auth, not a user session.
+                Developers cannot trigger Production via a key any more than they can in the UI.
+            </p>
+
+            <h2>Git remotes</h2>
+            <p>
+                Optional. Works with any standard Git host over the Git protocol. Auth is
+                a username plus token stored in Querial — not host REST APIs, not pull-request
+                automation. Publication must not become a secret dump. Workspace layout for
+                packages is a folder tree, not a second database.
+            </p>
+        </div>
+    </div>
+</DocsLayout>

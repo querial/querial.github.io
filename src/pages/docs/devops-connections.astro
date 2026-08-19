@@ -1,0 +1,49 @@
+---
+import DocsLayout from "../../layouts/docs.astro";
+---
+
+<DocsLayout title="Connections and environments — Querial">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-sky">For DevOps</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Connections and environments</h1>
+        </div>
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+            <p>
+                A <strong class="text-foreground">logical connection</strong> has a name and a
+                provider. It is not an environment catalog row. EnvironmentKind is a closed
+                enum: development, staging, production. Each kind has its own encrypted
+                endpoint (host, credentials, command timeout, connect timeout). Runtime
+                resolves <code class="text-foreground">(connection_id, kind) → endpoint</code>.
+            </p>
+            <p>
+                Steps store the logical connection. Monaco dialect follows that provider.
+                There is no pipeline-level supported-providers gate and no per-step
+                connection remap at deploy time.
+            </p>
+
+            <h2>Who can test and edit</h2>
+            <p>
+                Test and edit endpoints are operator actions (CanOperate). Developers
+                never hit non-development secrets via Test. After a breaking cutover that
+                wipes legacy secrets, operators re-enter per-kind secrets — they are not
+                copied.
+            </p>
+
+            <h2>SQL against kinds</h2>
+            <p>
+                You may preview and refresh schema against any kind. Production SQL is
+                still interactive, not a pipeline run. Command timeout on the endpoint is
+                one of three clocks (with lease/grace and cancel); it is snapshotted onto
+                executions when a run is planned.
+            </p>
+
+            <h2>Optional default on a deployment</h2>
+            <p>
+                <code class="text-foreground">deployments.connection_id</code> is an optional
+                default logical connection used only by legacy published steps that still
+                have a null connection. New publishes require every step and migration bound.
+            </p>
+        </div>
+    </div>
+</DocsLayout>

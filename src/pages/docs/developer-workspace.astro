@@ -1,0 +1,63 @@
+---
+import DocsLayout from "../../layouts/docs.astro";
+---
+
+<DocsLayout title="Workspace for Developers — Querial">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-indigo-on-dark">For Developers</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Workspace for Developers</h1>
+            <p class="text-muted-foreground mt-2">
+                Your home is Workspace at the root URL. Administration is not this role.
+                Hitting /Admin redirects home.
+            </p>
+        </div>
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+            <h2>Current team and project</h2>
+            <p>
+                The sidebar footer holds the team switcher. Pick a team, then a project
+                you can access. Cookies <code class="text-foreground">Querial.TeamId</code> and
+                <code class="text-foreground">Querial.ProjectId</code> plus preferences
+                <code class="text-foreground">ui.team</code> / <code class="text-foreground">ui.project</code>
+                remember the pair. After a switch, the page reloads a clean path so stale
+                pipeline or run ids are not reused.
+            </p>
+            <p>
+                If a URL names a resource in another project you can access, cookies
+                move to that team and project and the page continues. If you cannot
+                access it, the response is <strong class="text-foreground">404</strong>, not 403.
+            </p>
+
+            <h2>Empty states</h2>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>No team: ask a Platform admin to invite you.</li>
+                <li>Team but no project placement: ask a Team admin or Project admin to add you.</li>
+                <li>Developer on an empty project: stay in Workspace. You do not get a Create project CTA.</li>
+            </ul>
+
+            <h2>What the nav hides</h2>
+            <p>
+                Agents, Git remotes, and API keys require CanOperate — they are not
+                in Developer nav. Users, AI configuration, and instance diagnostics
+                require Platform admin. You will see pipelines, the SQL workspace,
+                schema, packages (as a project member), and run history as a member
+                — you will not see Retry on a failed run.
+            </p>
+
+            <h2>First day in a project</h2>
+            <ol class="list-decimal pl-5 space-y-2">
+                <li>Confirm the footer shows the intended team and project.</li>
+                <li>Open Connections as read-oriented context: you need logical names and providers to bind steps. Testing and editing endpoints are operator actions.</li>
+                <li>Create or open a pipeline draft. Author steps in modals; open SQL in the workspace when the editor needs room.</li>
+                <li>Validate the graph (at least one structural root, no cycles) and publish when the contract is ready. Operators deploy versions, not drafts.</li>
+            </ol>
+
+            <h2>Cultures and theme</h2>
+            <p>
+                UI cultures: en, tr, de, es, ru, uz, ar (Arabic is RTL). Theme cookie
+                <code class="text-foreground">ThemePreference</code>. Help for cron,
+                step types, and packages opens as markdown in a modal next to the control.
+            </p>
+        </div>
+    </div>
+</DocsLayout>

@@ -1,0 +1,57 @@
+---
+import DocsLayout from "../../layouts/docs.astro";
+---
+
+<DocsLayout title="Architecture — Querial">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-indigo-on-dark">Start here</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Architecture</h1>
+        </div>
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+            <p>
+                Querial is a control plane plus target-local execution. The browser never
+                becomes the query engine. The control database never stores business rows
+                from tenant pipelines.
+            </p>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>Browser (MVC)
+    → Platform API
+    → PostgreSQL 18 + pgvector (control database)
+    → Workers / registered agents
+         → PostgreSQL | SQL Server | MySQL targets
+         → optional S3-compatible artifact store
+         → embedded DuckDB on eligible agents</code></pre>
+
+            <h2>Control plane</h2>
+            <ul class="list-disc pl-5 space-y-1 text-muted-foreground">
+                <li>Web UI: Tabler, collapsible left sidebar, no application-level top bar, no CDN UI libraries.</li>
+                <li>Separate API host.</li>
+                <li>Dapper-only persistence. Custom numbered SQL migrations.</li>
+                <li>ASP.NET Core Identity with a Platform admin role. Project roles live in membership tables, not Identity.</li>
+                <li>AES-256-GCM for connection endpoint secrets. API keys are SHA-256 hashed, shown once.</li>
+            </ul>
+
+            <h2>Execution dual-path</h2>
+            <p>
+                Feature flags keep legacy ordered serial execution until DAG execution
+                and registered agents are enabled. Legacy ordered pipelines import as
+                sequential edges. Dedicated worker is the default; in-process is optional
+                for compact local hosts.
+            </p>
+
+            <h2>Optional pieces</h2>
+            <ul class="list-disc pl-5 space-y-1 text-muted-foreground">
+                <li><strong class="text-foreground">Git</strong> — optional remotes and package publication. Never required to run pipelines.</li>
+                <li><strong class="text-foreground">Messaging</strong> — optional. Never the large-data path. Parquet does not travel on the bus.</li>
+                <li><strong class="text-foreground">DuckDB</strong> — embedded in eligible agents, not a separate cluster.</li>
+            </ul>
+
+            <h2>Not in the baseline</h2>
+            <p>
+                General-purpose workflow engines, file-oriented ETL suites, streaming,
+                replication, visual no-code transforms, a hidden intermediate representation
+                that rewrites business SQL, and product-specific reporting logic in the core.
+            </p>
+        </div>
+    </div>
+</DocsLayout>

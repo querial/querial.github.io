@@ -1,0 +1,84 @@
+---
+import "../styles/global.css";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+const { title = "Querial Docs" } = Astro.props;
+---
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta
+            name="description"
+            content="Querial documentation for Developers, DevOps, and Platform, Team, and Project admins."
+        />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="preconnect" href="https://rsms.me/" />
+        <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+
+        <title>{title}</title>
+        <script is:inline>
+            (function () {
+                const stored = localStorage.getItem("theme");
+                const prefersDark = window.matchMedia(
+                    "(prefers-color-scheme: dark)",
+                ).matches;
+                if (stored === "dark" || (!stored && prefersDark)) {
+                    document.documentElement.classList.add("dark");
+                }
+            })();
+        </script>
+    </head>
+    <body class="antialiased">
+        <Header client:load />
+        <main class="container mx-auto px-4 py-12 md:py-20 max-w-4xl">
+            <slot />
+        </main>
+        <Footer />
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const main = document.querySelector("main");
+                if (!main) return;
+                const pres = main.querySelectorAll("pre");
+                pres.forEach(function (pre) {
+                    const code = pre.querySelector("code");
+                    const text = code ? code.textContent || "" : pre.textContent || "";
+                    if (!text.trim()) return;
+
+                    const wrapper = document.createElement("div");
+                    wrapper.className = "docs-code-block";
+
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "docs-copy-btn";
+                    btn.setAttribute("aria-label", "Copy code");
+                    btn.textContent = "Copy";
+
+                    btn.addEventListener("click", function () {
+                        navigator.clipboard.writeText(text).then(
+                            function () {
+                                btn.textContent = "Copied!";
+                                btn.classList.add("copied");
+                                setTimeout(function () {
+                                    btn.textContent = "Copy";
+                                    btn.classList.remove("copied");
+                                }, 2000);
+                            },
+                            function () {
+                                btn.textContent = "Failed";
+                                setTimeout(function () {
+                                    btn.textContent = "Copy";
+                                }, 2000);
+                            }
+                        );
+                    });
+
+                    pre.parentNode.insertBefore(wrapper, pre);
+                    wrapper.appendChild(btn);
+                    wrapper.appendChild(pre);
+                });
+            });
+        </script>
+    </body>
+</html>

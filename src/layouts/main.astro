@@ -1,0 +1,54 @@
+---
+import "../styles/global.css";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+const { title = "Querial — Design SQL once. Run it on every database." } =
+	Astro.props;
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta
+			name="description"
+			content="Querial is a SQL-native control plane for designing, versioning, deploying, and operating database pipelines across PostgreSQL, SQL Server, and MySQL."
+		/>
+		<meta
+			name="keywords"
+			content="SQL pipelines, DAG, database orchestration, PostgreSQL, SQL Server, MySQL, deployments, scheduling, agents"
+		/>
+		<meta
+			property="og:title"
+			content="Querial — Design SQL once. Run it on every database."
+		/>
+		<meta
+			property="og:description"
+			content="A SQL-native control plane. Author dialect SQL, publish an immutable DAG, and operate runs across many target databases."
+		/>
+		<meta property="og:type" content="website" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="preconnect" href="https://rsms.me/" />
+		<link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+
+		<title>{title}</title>
+		<script is:inline>
+			(function () {
+				const stored = localStorage.getItem("theme");
+				const prefersDark = window.matchMedia(
+					"(prefers-color-scheme: dark)",
+				).matches;
+				if (stored === "dark" || (!stored && prefersDark)) {
+					document.documentElement.classList.add("dark");
+				}
+			})();
+		</script>
+	</head>
+	<body class="antialiased overflow-x-hidden">
+		<Header client:load />
+		<main>
+			<slot />
+		</main>
+		<Footer />
+	</body>
+</html>
