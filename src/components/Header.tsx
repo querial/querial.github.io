@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Menu, X, ChevronDown, Home } from "lucide-react";
+import { Menu, X, ChevronDown, Home, MessageSquare } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { BrandLogo } from "@/components/BrandLogo";
 
@@ -93,6 +93,14 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-4 sm:gap-5">
+          <a
+            href="/feedback"
+            className="hidden md:inline-flex text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Feedback"
+            title="Feedback"
+          >
+            <MessageSquare className="h-5 w-5" />
+          </a>
           <ThemeToggle />
 
           <button
@@ -130,6 +138,14 @@ export function Header() {
                 {item.label}
               </a>
             ))}
+            <a
+              href="/feedback"
+              className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <MessageSquare className="h-4 w-4" />
+              Feedback
+            </a>
             <div className="pt-2 border-t border-border/40">
               <p className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider mb-2">
                 Docs

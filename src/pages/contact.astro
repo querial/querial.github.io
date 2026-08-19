@@ -1,6 +1,6 @@
 ---
 import Layout from "../layouts/main.astro";
-import { BookOpen, Users } from "lucide-react";
+import { BookOpen, Users, MessageSquare } from "lucide-react";
 
 const title = "Contact — Querial";
 ---
@@ -20,12 +20,31 @@ const title = "Contact — Querial";
                     </h1>
                     <p class="text-lg text-muted-foreground max-w-xl mx-auto">
                         Querial is self-hosted. Day-to-day questions belong with
-                        your Platform admin or Team admin. Product behavior is
-                        documented here by persona.
+                        your Platform admin or Team admin. Product ideas and
+                        site issues can come through the feedback form.
                     </p>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <a
+                        href="/feedback"
+                        class="group p-8 rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg shadow-querial-indigo/5 hover:border-querial-indigo/50 transition-colors md:col-span-2"
+                    >
+                        <div class="inline-flex p-3 rounded-xl bg-gradient-to-br from-querial-indigo to-querial-indigo-on-dark mb-4">
+                            <MessageSquare class="h-6 w-6 text-white" />
+                        </div>
+                        <h2 class="text-xl font-semibold mb-2">
+                            Send feedback
+                        </h2>
+                        <p class="text-muted-foreground mb-4">
+                            Questions, bug reports, or ideas for Querial — send
+                            a message and we'll get back to you.
+                        </p>
+                        <span class="text-sm font-medium text-primary group-hover:underline">
+                            Open the feedback form →
+                        </span>
+                    </a>
+
                     <a
                         href="/docs"
                         class="group p-8 rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg shadow-querial-indigo/5 hover:border-querial-indigo/50 transition-colors"

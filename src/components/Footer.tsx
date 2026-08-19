@@ -73,6 +73,11 @@ export function Footer() {
                   Contact
                 </a>
               </li>
+              <li>
+                <a href="/feedback" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Feedback
+                </a>
+              </li>
             </ul>
           </div>
 
