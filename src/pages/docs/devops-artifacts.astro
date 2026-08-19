@@ -37,6 +37,15 @@ import DocsLayout from "../../layouts/docs.astro";
                 distributed transactions across those connections. Artifact-aware scheduling
                 avoids starting a sink when the Parquet file is not ready.
             </p>
+            <p>
+                Fan-in of Parquet into Artifact SQL or Staged Database SQL is always
+                <strong class="text-foreground">Wait all</strong>. Wait any is rejected
+                on those handlers, on <code class="text-foreground">from_step</code>
+                bindings, and on <code class="text-foreground">artifact_available</code>
+                edges. There is no first-winner artifact. Control-only OR joins belong
+                on classic SQL after alternative extracts —
+                <a href="/docs/developer-join-mode" class="text-link hover:underline">Wait all and Wait any</a>.
+            </p>
         </div>
     </div>
 </DocsLayout>

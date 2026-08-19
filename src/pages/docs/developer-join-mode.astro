@@ -1,0 +1,157 @@
+---
+import DocsLayout from "../../layouts/docs.astro";
+---
+
+<DocsLayout title="Wait all and Wait any — Querial">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-indigo-on-dark">For Developers</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Wait all and Wait any</h1>
+            <p class="text-muted-foreground mt-2">
+                How a fan-in step decides it is Ready. Informal names
+                <em>when-all</em> and <em>when-any</em> mean the same two modes.
+            </p>
+        </div>
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground [&>h3]:text-foreground">
+            <p>
+                Join mode lives on the <strong class="text-foreground">consumer</strong>
+                — the step that has two or more inbound edges. It is not a separate wait
+                node, diamond, or empty gate. The designer shows a Join control on that
+                existing node (inspector plus a compact ALL / ANY badge). Roots and
+                single-parent steps ignore the setting; they always behave as Wait all.
+            </p>
+            <p>
+                Each inbound edge still answers “what does this predecessor owe me?”
+                (<code class="text-foreground">succeeded</code>,
+                <code class="text-foreground">completed</code>, or
+                <code class="text-foreground">artifact_available</code>). Join mode
+                answers “how do those inbound edges combine?” YAML and the package
+                field are <code class="text-foreground">join_mode: all</code> or
+                <code class="text-foreground">join_mode: any</code>. Omit the field
+                and it is Wait all.
+            </p>
+
+            <h2>Wait all (default)</h2>
+            <p>
+                Every inbound edge must be satisfied before the consumer becomes Ready.
+                This is the AND join. Data fan-in — header extract plus line extract into
+                DuckDB or Staged Database SQL — is always Wait all.
+            </p>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>load_sales_order  ──succeeded──┐
+                               ├──► reconcile_orders   Wait all
+load_sales_line   ──succeeded──┘</code></pre>
+            <p>
+                If any parent that is required to succeed fails, is skipped, is
+                cancelled, or is abandoned, the consumer is skipped immediately. It
+                does not wait for the remaining parents.
+            </p>
+
+            <h2>Wait any</h2>
+            <p>
+                At least one inbound edge must be satisfied. This is the OR join.
+                The first winner opens the gate. Unsatisfied siblings
+                <strong class="text-foreground">keep running</strong> — opening Wait any
+                does not skip, cancel, or abandon losing branches.
+            </p>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>extract_primary    ──succeeded──┐
+                                ├──► notify_source_ready   Wait any
+extract_fallback   ──succeeded──┘</code></pre>
+            <p>
+                <code class="text-foreground">notify_source_ready</code> becomes Ready
+                when the first extract succeeds. The other extract continues. If every
+                parent finishes terminal and none satisfied the edge, the consumer is
+                skipped with reason <code class="text-foreground">wait_any_unsatisfied</code>.
+                While a loser is still running, the consumer stays pending — a failed
+                parent is “not yet a winner,” not an immediate skip.
+            </p>
+            <p>
+                Edge requirement still matters. With
+                <code class="text-foreground">succeeded</code> edges, a failed parent
+                does not open the gate; a sibling success can. With
+                <code class="text-foreground">completed</code> edges, the first parent
+                that reaches any terminal status satisfies the OR. A parent in
+                <code class="text-foreground">retry_waiting</code> is neither succeeded
+                nor completed; a different parent that already succeeded can still
+                open the gate.
+            </p>
+
+            <h2>Wait any is control-only</h2>
+            <p>
+                Publish, package validation, and the draft Join save reject
+                <code class="text-foreground">join_mode: any</code> when any of these
+                is true:
+            </p>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>The step has fewer than two inbound edges.</li>
+                <li>The handler is <code class="text-foreground">artifact-sql</code> or <code class="text-foreground">staged-database-sql</code>.</li>
+                <li>Step configuration binds <code class="text-foreground">from_step</code> (including a list of producers).</li>
+                <li>Any inbound edge is <code class="text-foreground">artifact_available</code>.</li>
+            </ul>
+            <p>
+                Those shapes are data joins. They must wait for every input. There is
+                no “take the first Parquet” winner binding. Allowed Wait any consumers
+                in v1 are classic SQL handlers and
+                <code class="text-foreground">database-query-to-parquet</code> when
+                they have no <code class="text-foreground">from_step</code> — for
+                example a notify or validation step after two alternative extracts.
+            </p>
+            <p>
+                The designer disables Wait any on Artifact SQL and Staged Database SQL.
+                If you drop a parent so inbound count falls below two, the draft is
+                coerced back to Wait all. Publish still errors if
+                <code class="text-foreground">any</code> remains on a node with fewer
+                than two inbound edges.
+            </p>
+
+            <h2>Where you set it</h2>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>DAG designer inspector, only when the selected node has two or more inbound edges.</li>
+                <li>Step create/edit modal Join select (same rule; disabled below two inbound edges).</li>
+                <li>Package YAML: omit for Wait all; write <code class="text-foreground">join_mode: any</code> only when you mean it. Export omits Wait all so existing hashes stay stable.</li>
+            </ul>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>steps:
+  - code: notify_source_ready
+    type: sql_command
+    join_mode: any</code></pre>
+            <p>
+                There is no pipeline-level default join mode and no extra feature flag.
+                Join mode is DAG execution only. While legacy serial execution is still
+                on, the pipeline runs by order and
+                <code class="text-foreground">join_mode</code> is unused.
+            </p>
+
+            <h2>Runs, fail-fast, and retry</h2>
+            <p>
+                When a run plan is created, join mode is copied onto each step
+                execution. Later draft edits do not change an in-flight run. If inbound
+                count at plan time is below two, the snapshot is Wait all.
+            </p>
+            <p>
+                Run-wide <strong class="text-foreground">fail fast</strong> still wins.
+                A mandatory (<code class="text-foreground">fail_pipeline</code>) failure
+                latches skip of remaining unstarted work, including a pending Wait any
+                consumer, before OR logic can start it. Losing siblings that are already
+                running are not cancelled by Wait any itself; fail-fast cancel-in-flight
+                is the separate run policy.
+            </p>
+            <p>
+                Failed-cone recovery does not need a special join selector. A Wait any
+                consumer that already succeeded is reused. Parents that failed remain
+                in the failed cone. The run visualizer shows the same ALL / ANY badges
+                as the designer.
+            </p>
+            <p>
+                Operators: see
+                <a href="/docs/devops-scheduling" class="text-link hover:underline">Scheduling and runs</a>
+                and
+                <a href="/docs/devops-retry" class="text-link hover:underline">Retry and failed-cone recovery</a>.
+                In-run policy lives on
+                <a href="/docs/developer-retry" class="text-link hover:underline">Step retry policies</a>.
+                Related design pages:
+                <a href="/docs/developer-pipelines" class="text-link hover:underline">Pipelines and the DAG designer</a>,
+                <a href="/docs/developer-packages" class="text-link hover:underline">Packages</a>,
+                <a href="/docs/devops-artifacts" class="text-link hover:underline">Artifacts</a>.
+            </p>
+        </div>
+    </div>
+</DocsLayout>

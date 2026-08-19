@@ -32,6 +32,16 @@ import DocsLayout from "../../layouts/docs.astro";
                 Legacy ordered pipelines import as sequential edges so older designs still run
                 after DAG execution is enabled.
             </p>
+            <p>
+                Fan-in is not a new canvas shape. The consumer step’s
+                <strong class="text-foreground">Join</strong> control chooses Wait all
+                (every parent) or Wait any (first satisfied parent). Wait any is
+                control-only: it is rejected on Artifact SQL, Staged Database SQL,
+                <code class="text-foreground">from_step</code>, and
+                <code class="text-foreground">artifact_available</code> edges. Full
+                contract:
+                <a href="/docs/developer-join-mode" class="text-link hover:underline">Wait all and Wait any</a>.
+            </p>
 
             <h2>Structural roots</h2>
             <p>
@@ -56,6 +66,12 @@ import DocsLayout from "../../layouts/docs.astro";
                 that fails skips dependents that require success; it does not poison
                 independent branches. Skipped, cancelled, and abandoned terminals never
                 trip fail-fast.
+            </p>
+            <p>
+                In-run retry is a separate policy on the pipeline and each step
+                (defaults: one attempt, writes unsafe). It does not replace failure
+                policy. Details:
+                <a href="/docs/developer-retry" class="text-link hover:underline">Step retry policies</a>.
             </p>
 
             <h2>Step create/edit</h2>

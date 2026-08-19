@@ -38,6 +38,16 @@ const faqs = [
       "No. Structural roots — steps with no incoming edges — are the only start nodes. Default runs plan and execute the full published graph. Failed-cone recovery is a separate operator action on a failed or abandoned run: it still plans the full graph, skips execution of source succeeded nodes, and rebinds artifacts.",
   },
   {
+    question: "What is Wait any (when-any)?",
+    answer:
+      "On a step with two or more inbound edges, Wait all (the default) waits for every parent. Wait any starts after the first satisfied parent; losing branches keep running. It is control-only: Artifact SQL, Staged Database SQL, from_step bindings, and artifact_available edges cannot use it. Those are data joins and stay Wait all. Join mode is not a separate wait node on the canvas.",
+  },
+  {
+    question: "Does Querial retry failed steps automatically?",
+    answer:
+      "Only when the published version raises retry_max_attempts above 1, the step is not marked unsafe for in-run auto-retry, and the failure is transient (deadlock, serialization, timeout). Default is one attempt — off. Writes default unsafe; extracts and Artifact SQL default safe. Exhausting in-run attempts does not start a failed-cone. Operators choose full retry or failed-cone on a failed or abandoned run. Developers set policy; they cannot click Retry.",
+  },
+  {
     question: "Is Git required?",
     answer:
       "No. Packages can live in Git, and optional remotes can publish diffs, but core operation never requires a remote. Messaging is also optional and never carries large tabular payloads.",

@@ -26,6 +26,9 @@ import LabsLayout from "../../layouts/labs.astro";
             <a href="/docs/devops-artifacts" class="inline-flex items-center rounded-lg border border-border/60 px-4 py-2 text-sm font-medium hover:bg-muted/50">
                 Artifacts docs
             </a>
+            <a href="/docs/developer-join-mode" class="inline-flex items-center rounded-lg border border-border/60 px-4 py-2 text-sm font-medium hover:bg-muted/50">
+                Wait all / Wait any
+            </a>
         </div>
 
         <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
@@ -120,10 +123,10 @@ GROUP BY
             <h2>Walkthrough extras</h2>
             <ol class="list-decimal pl-5 space-y-2">
                 <li>Import the zip. Resolve all three connections.</li>
-                <li>Designer: three DuckDB nodes (no connection badge on them). <code class="text-foreground">transform_order_summary</code> has two inbound artifact edges.</li>
+                <li>Designer: three DuckDB nodes (no connection badge on them). <code class="text-foreground">transform_order_summary</code> has two inbound artifact edges and stays Wait all — Wait any is rejected on Artifact SQL. See <a href="/docs/developer-join-mode" class="text-link hover:underline">Wait all and Wait any</a>.</li>
                 <li>Publish: one root — no multi-root warning.</li>
                 <li>Run Graph: extract → CAST transforms → join step → six sinks (order, line, summary × two dests). Inspector on the join step lists two input artifacts and output <code class="text-foreground">order_summary</code>. SQL tab is the published DuckDB, not the draft.</li>
-                <li>Failed-cone: fail one staged sink; retry cone; extracts and DuckDB steps should stay Succeeded / reused.</li>
+                <li>Failed-cone: fail one staged sink; retry cone; extracts and DuckDB steps should stay Succeeded / reused. Writes are default-unsafe for in-run auto-retry; cone retry of those writes is allowed. See <a href="/docs/devops-retry" class="text-link hover:underline">Retry and failed-cone</a> and <a href="/docs/developer-retry" class="text-link hover:underline">Step retry policies</a>.</li>
             </ol>
 
             <h2>Verify</h2>

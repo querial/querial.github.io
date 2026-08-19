@@ -1,0 +1,206 @@
+---
+import DocsLayout from "../../layouts/docs.astro";
+---
+
+<DocsLayout title="Step retry policies — Querial">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-indigo-on-dark">For Developers</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Step retry policies</h1>
+            <p class="text-muted-foreground mt-2">
+                Pipeline defaults and per-step overrides for in-run auto-retry.
+                Creating a new run after failure is an operator action — see
+                <a href="/docs/devops-retry" class="text-link hover:underline">Retry and failed-cone recovery</a>.
+            </p>
+        </div>
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground [&>h3]:text-foreground">
+            <p>
+                Two recovery layers share one policy snapshot. <strong class="text-foreground">In-run retry</strong>
+                stays on the same step execution:
+                <code class="text-foreground">running</code> →
+                <code class="text-foreground">retry_waiting</code> →
+                <code class="text-foreground">queued</code>.
+                <strong class="text-foreground">Failed-cone</strong> is a new run that still
+                plans the full graph and reuses source succeeded steps. This page is the
+                design-time policy. Developers set it; they cannot click Retry.
+            </p>
+            <p>
+                Policy is inherited, then snapshotted onto step executions when the run
+                plan is created. Later draft edits do not change an in-flight run.
+                Publish freezes version defaults with the rest of the immutable DAG.
+            </p>
+
+            <h2>Pipeline defaults</h2>
+            <p>
+                Edit the pipeline (not a wait node). Defaults apply to every step unless
+                the step overrides them.
+            </p>
+            <div class="overflow-x-auto not-prose">
+                <table class="w-full text-sm border-collapse">
+                    <thead>
+                        <tr class="border-b border-border text-left">
+                            <th class="py-2 pr-4 font-semibold">Field</th>
+                            <th class="py-2 pr-4 font-semibold">Default</th>
+                            <th class="py-2 font-semibold">Meaning</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-muted-foreground">
+                        <tr class="border-b border-border/50">
+                            <td class="py-2 pr-4 font-medium text-foreground"><code>retry_max_attempts</code></td>
+                            <td class="py-2 pr-4">1</td>
+                            <td class="py-2">1 means no automatic in-run retry. Raise it to allow more leases on the same step execution.</td>
+                        </tr>
+                        <tr class="border-b border-border/50">
+                            <td class="py-2 pr-4 font-medium text-foreground"><code>retry_backoff_seconds</code></td>
+                            <td class="py-2 pr-4">30</td>
+                            <td class="py-2">Base delay from retry_waiting to queued.</td>
+                        </tr>
+                        <tr class="border-b border-border/50">
+                            <td class="py-2 pr-4 font-medium text-foreground"><code>retry_backoff_multiplier</code></td>
+                            <td class="py-2 pr-4">2</td>
+                            <td class="py-2">Pipeline-only. <code class="text-foreground">delay = backoff × multiplier^(attempt-1)</code>, capped at 900 seconds.</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 pr-4 font-medium text-foreground"><code>retry_on_abandoned</code></td>
+                            <td class="py-2 pr-4">false</td>
+                            <td class="py-2">After lease expiry plus grace, re-queue only when this is true, attempts remain, and the step is not unsafe.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>
+                Validation: max attempts ≥ 1, backoff seconds ≥ 0, multiplier ≥ 1.
+            </p>
+
+            <h2>Step overrides</h2>
+            <p>
+                Blank fields inherit the pipeline default. The step editor Join/retry
+                modal must not wipe omitted overrides on save.
+            </p>
+            <ul class="list-disc pl-5 space-y-1">
+                <li><code class="text-foreground">retry_max_attempts</code>, <code class="text-foreground">retry_backoff_seconds</code>, <code class="text-foreground">retry_on_abandoned</code> — inherit when blank.</li>
+                <li><code class="text-foreground">unsafe_for_auto_retry</code> — concrete true/false on the step. Handler default applies on create and on type change if you leave it unspecified.</li>
+                <li><code class="text-foreground">command_timeout_seconds</code> — optional. When set, must be greater than 0.</li>
+            </ul>
+            <p>
+                The backoff multiplier is not a per-step field. Attempt numbers are owned
+                by the lease claim (<code class="text-foreground">MAX(attempt_number)+1</code>).
+                A failed attempt does not increment a second time.
+            </p>
+
+            <h2>Unsafe for in-run auto-retry</h2>
+            <p>
+                The unsafe flag blocks <strong class="text-foreground">in-run</strong>
+                automatic retry only. Operator failed-cone retry of those writes is
+                allowed. Handler defaults when the author does not set the flag:
+            </p>
+            <div class="overflow-x-auto not-prose">
+                <table class="w-full text-sm border-collapse">
+                    <thead>
+                        <tr class="border-b border-border text-left">
+                            <th class="py-2 pr-4 font-semibold">Handler</th>
+                            <th class="py-2 font-semibold">Default unsafe?</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-muted-foreground">
+                        <tr class="border-b border-border/50">
+                            <td class="py-2 pr-4 text-foreground">database-query-to-parquet, artifact-sql</td>
+                            <td class="py-2">No (retry-safe extracts and DuckDB transforms)</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 pr-4 text-foreground">sql_command, sql_query, stored_procedure, validation_query, database-sql, staged-database-sql</td>
+                            <td class="py-2">Yes (writes and classic SQL)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>
+                An extract with <code class="text-foreground">retry_max_attempts = 3</code>
+                can auto-retry a transient timeout. A staged sink with the same attempts
+                still will not auto-retry unless you clear the unsafe flag — and even
+                then only if the failure is classified transient. Prefer idempotent SQL
+                (MERGE, watermarks) before you make a write retry-safe.
+            </p>
+
+            <h2>When in-run retry actually fires</h2>
+            <p>All of these must be true:</p>
+            <ol class="list-decimal pl-5 space-y-1">
+                <li>Effective max attempts is greater than the just-finished lease attempt number.</li>
+                <li><code class="text-foreground">unsafe_for_auto_retry</code> is false.</li>
+                <li>The failure is transient, or the lease was abandoned with <code class="text-foreground">retry_on_abandoned</code>.</li>
+                <li>The step was not cancelled.</li>
+                <li>For abandon: lease grace has elapsed.</li>
+            </ol>
+            <p>
+                Not retryable: operator or fail-fast cancel; config/parse errors; missing
+                connection; handler or feature-flag gates; non-transient SQL such as
+                syntax and missing objects. Deadlocks and serialization failures are
+                transient (PostgreSQL <code class="text-foreground">40001</code> /
+                <code class="text-foreground">40P01</code>, SQL Server 1205, MySQL
+                1213 / 1205), as are command and connect timeouts on a retry-safe step.
+                Unknown provider errors are retryable only if the step is retry-safe.
+            </p>
+            <p>
+                Exhausting in-run attempts does <strong class="text-foreground">not</strong>
+                start a failed-cone automatically. The run fails; a human chooses full
+                retry or failed-cone.
+            </p>
+
+            <h2>Three clocks, not four</h2>
+            <p>
+                There is no extra whole-step wall-clock. Architecture “retry, timeout,
+                and cancellation” names clocks that already exist:
+            </p>
+            <ul class="list-disc pl-5 space-y-1">
+                <li><strong class="text-foreground">Command timeout</strong> — step override if set, else handler JSON <code class="text-foreground">commandTimeoutSeconds</code>, else the bound connection endpoint, else 30 seconds (Artifact SQL has no connection). Snapshotted at plan create. A timeout is transient when the step is retry-safe. Mid-run endpoint edits do not stretch an in-flight command.</li>
+                <li><strong class="text-foreground">Lease duration plus grace</strong> — agent liveness. Not a substitute command timeout. After grace, <code class="text-foreground">retry_on_abandoned</code> decides re-queue versus terminal abandoned.</li>
+                <li><strong class="text-foreground">Cancel</strong> — run or lease cancel. Never retryable.</li>
+            </ul>
+
+            <h2>Fail-fast</h2>
+            <p>
+                <code class="text-foreground">retry_waiting</code> is not Failed, so a
+                retrying mandatory step does not trip the run-wide fail-fast latch.
+                After a <em>different</em> mandatory step has Failed, pending
+                <code class="text-foreground">retry_waiting</code> work is still an
+                unstarted skip target — a doomed run does not keep retrying.
+            </p>
+
+            <h2>Packages</h2>
+            <p>
+                Optional pipeline and step <code class="text-foreground">retry</code> maps
+                on <code class="text-foreground">querial.package/v1</code>. Omitted keys
+                mean the defaults above. No format v2 bump. Step
+                <code class="text-foreground">unsafe_for_auto_retry</code> and
+                <code class="text-foreground">command_timeout_seconds</code> are sibling
+                fields, not inside the retry map.
+            </p>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>retry:
+  max_attempts: 3
+  backoff_seconds: 30
+  backoff_multiplier: 2
+  on_abandoned: false
+
+steps:
+  - code: extract_sales_order
+    type: database-query-to-parquet
+    retry:
+      max_attempts: 3
+    unsafe_for_auto_retry: false
+    command_timeout_seconds: 120</code></pre>
+            <p>
+                Dual-path: legacy serial execution retries in an inner loop and never
+                writes DAG statuses such as <code class="text-foreground">retry_waiting</code>
+                onto the legacy step-run table. Failed-cone requires DAG execution
+                (and Artifacts / DuckDB flags when those handlers are in the cone).
+            </p>
+            <p>
+                Related:
+                <a href="/docs/developer-pipelines" class="text-link hover:underline">Pipelines</a>,
+                <a href="/docs/developer-packages" class="text-link hover:underline">Packages</a>,
+                <a href="/docs/developer-sql" class="text-link hover:underline">SQL and handlers</a>,
+                <a href="/docs/devops-retry" class="text-link hover:underline">Operator retry and failed-cone</a>.
+            </p>
+        </div>
+    </div>
+</DocsLayout>

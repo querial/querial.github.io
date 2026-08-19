@@ -64,6 +64,18 @@ import DocsLayout from "../../layouts/docs.astro";
                 connection/transaction. You never see the physical staging table name;
                 tokens are substituted.
             </p>
+            <p>
+                Multi-input Artifact SQL and Staged Database SQL are data joins: they
+                stay <strong class="text-foreground">Wait all</strong>. Publish rejects
+                Wait any on those handlers and on any step whose config binds
+                <code class="text-foreground">from_step</code>. Classic SQL (and a
+                Parquet extract with no <code class="text-foreground">from_step</code>)
+                may use Wait any when two or more inbound edges are control gates —
+                <a href="/docs/developer-join-mode" class="text-link hover:underline">Wait all and Wait any</a>.
+                Handler defaults for in-run auto-retry (writes unsafe, extracts and
+                Artifact SQL safe):
+                <a href="/docs/developer-retry" class="text-link hover:underline">Step retry policies</a>.
+            </p>
 
             <h2>Migrations</h2>
             <p>

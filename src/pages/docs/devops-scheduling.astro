@@ -34,7 +34,8 @@ import DocsLayout from "../../layouts/docs.astro";
                 is <strong class="text-foreground">executed</strong>. Cheap repeats are
                 author-owned via idempotent SQL (MERGE, watermarks, version guards). Querial
                 does not skip nodes that “look already done” for those triggers. Failed-cone
-                recovery is a separate operator action — see Retry.
+                recovery is a separate operator action —
+                <a href="/docs/devops-retry" class="text-link hover:underline">Retry and failed-cone recovery</a>.
             </p>
 
             <h2>Concurrency</h2>
@@ -47,8 +48,18 @@ import DocsLayout from "../../layouts/docs.astro";
             <h2>Run visualizer</h2>
             <p>
                 The visualizer is the published graph with live status (including SSE).
-                Root nodes are badged. Retry actions live on run details and the schedule
-                run list, not on the visualizer canvas.
+                Root nodes are badged. Fan-in nodes with two or more inbound edges show
+                compact ALL / ANY badges for the snapshotted join mode. Retry actions
+                live on run details and the schedule run list, not on the visualizer
+                canvas.
+            </p>
+            <p>
+                Join mode is taken from the run snapshot, not from later draft edits.
+                Wait any does not cancel losing branches. Fail-fast still skips a
+                pending Wait any consumer before OR logic can start it. Skip reason
+                <code class="text-foreground">wait_any_unsatisfied</code> means every
+                inbound parent finished and none satisfied its edge. Design-time rules:
+                <a href="/docs/developer-join-mode" class="text-link hover:underline">Wait all and Wait any</a>.
             </p>
         </div>
     </div>

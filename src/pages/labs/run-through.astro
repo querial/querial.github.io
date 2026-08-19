@@ -120,7 +120,11 @@ import LabsLayout from "../../layouts/labs.astro";
             </p>
             <ul class="list-disc pl-5 space-y-1">
                 <li><strong class="text-foreground">View run graph</strong> — live visualizer.</li>
-                <li><strong class="text-foreground">Retry</strong> — DevOps, on failed or abandoned. Full rerun or failed-cone (see Retry docs). Not on the canvas.</li>
+                <li><strong class="text-foreground">Retry</strong> — DevOps, on failed or abandoned. Full rerun or failed-cone (
+                <a href="/docs/devops-retry" class="text-link hover:underline">operator retry</a>;
+                in-run policy is
+                <a href="/docs/developer-retry" class="text-link hover:underline">step retry policies</a>).
+                Not on the canvas.</li>
                 <li><strong class="text-foreground">Cancel</strong> — pending or running.</li>
             </ul>
 

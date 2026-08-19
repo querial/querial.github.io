@@ -37,14 +37,37 @@ pipelines/
                 unresolved endpoints is not this role.
             </p>
 
-            <h2>Edges and retry maps</h2>
+            <h2>Edges, retry maps, and join mode</h2>
             <p>
                 In <code class="text-foreground">pipeline.yaml</code>, <code class="text-foreground">to</code>
-                depends on <code class="text-foreground">from</code>. Additive
-                <code class="text-foreground">retry</code> maps are allowed; omit means product
-                defaults (<code class="text-foreground">retry_max_attempts = 1</code> is off).
-                There is no format v2 bump for those fields.
+                depends on <code class="text-foreground">from</code>. Additive pipeline
+                and step <code class="text-foreground">retry</code> maps,
+                <code class="text-foreground">unsafe_for_auto_retry</code>, and
+                <code class="text-foreground">command_timeout_seconds</code> follow
+                <a href="/docs/developer-retry" class="text-link hover:underline">Step retry policies</a>
+                (omit means max attempts 1 — off). Optional step
+                <code class="text-foreground">join_mode</code> is
+                <code class="text-foreground">all</code> or
+                <code class="text-foreground">any</code>; omit means Wait all. Export
+                writes the field only when it is Wait any. There is no format v2 bump
+                for those fields. Wait any is rejected at package validate on
+                Artifact SQL, Staged Database SQL,
+                <code class="text-foreground">from_step</code>,
+                <code class="text-foreground">artifact_available</code> inbound edges,
+                and indegree below two — see
+                <a href="/docs/developer-join-mode" class="text-link hover:underline">Wait all and Wait any</a>.
             </p>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>retry:
+  max_attempts: 3
+
+steps:
+  - code: extract_sales_order
+    type: database-query-to-parquet
+    retry:
+      max_attempts: 3
+  - code: notify_source_ready
+    type: sql_command
+    join_mode: any</code></pre>
 
             <h2>Where import lands</h2>
             <p>

@@ -46,7 +46,7 @@ const card =
                 Start here
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <a href="/docs/concepts" class={`${card} hover:border-querial-indigo-on-dark/30`} data-doc-title="Core concepts pipeline version deployment run agent project">
+                <a href="/docs/concepts" class={`${card} hover:border-querial-indigo-on-dark/30`} data-doc-title="Core concepts pipeline version deployment run agent project join mode wait all wait any retry policy">
                     <div class="w-10 h-10 rounded-lg bg-querial-indigo/15 flex items-center justify-center shrink-0">
                         <span class="text-querial-indigo-on-dark text-lg font-bold">C</span>
                     </div>
@@ -55,7 +55,7 @@ const card =
                         <p class="text-xs text-muted-foreground">Terminology, shells, and rules the product does not bend.</p>
                     </div>
                 </a>
-                <a href="/docs/architecture" class={`${card} hover:border-querial-indigo-on-dark/30`} data-doc-title="Architecture control plane workers artifacts">
+                <a href="/docs/architecture" class={`${card} hover:border-querial-indigo-on-dark/30`} data-doc-title="Architecture control plane workers artifacts DAG join wait any">
                     <div class="w-10 h-10 rounded-lg bg-querial-indigo/15 flex items-center justify-center shrink-0">
                         <span class="text-querial-indigo-on-dark text-lg font-bold">A</span>
                     </div>
@@ -103,10 +103,22 @@ const card =
                         <p class="text-xs text-muted-foreground">Current project, empty states, what the nav hides.</p>
                     </div>
                 </a>
-                <a href="/docs/developer-pipelines" class={`${card} hover:border-querial-indigo-on-dark/30`} data-doc-title="Pipelines DAG designer publish edges roots">
+                <a href="/docs/developer-pipelines" class={`${card} hover:border-querial-indigo-on-dark/30`} data-doc-title="Pipelines DAG designer publish edges roots wait all wait any join retry policy">
                     <div>
                         <p class="font-medium text-sm group-hover:text-querial-indigo-on-dark">Pipelines and the DAG designer</p>
                         <p class="text-xs text-muted-foreground">Drafts, edges, publish, structural roots, failure policy.</p>
+                    </div>
+                </a>
+                <a href="/docs/developer-join-mode" class={`${card} hover:border-querial-indigo-on-dark/30`} data-doc-title="Wait all Wait any when-all when-any join mode fan-in OR AND from_step artifact_available">
+                    <div>
+                        <p class="font-medium text-sm group-hover:text-querial-indigo-on-dark">Wait all and Wait any</p>
+                        <p class="text-xs text-muted-foreground">Fan-in join mode. Control-only OR. Losing branches keep running.</p>
+                    </div>
+                </a>
+                <a href="/docs/developer-retry" class={`${card} hover:border-querial-indigo-on-dark/30`} data-doc-title="Step retry policies max attempts backoff unsafe_for_auto_retry command timeout retry_waiting">
+                    <div>
+                        <p class="font-medium text-sm group-hover:text-querial-indigo-on-dark">Step retry policies</p>
+                        <p class="text-xs text-muted-foreground">Pipeline defaults, step overrides, unsafe writes, three clocks.</p>
                     </div>
                 </a>
                 <a href="/docs/developer-sql" class={`${card} hover:border-querial-indigo-on-dark/30`} data-doc-title="SQL workspace Monaco schema SqlAssist steps migrations">
@@ -115,7 +127,7 @@ const card =
                         <p class="text-xs text-muted-foreground">Monaco, schema cache, SqlAssist drafts, handler types.</p>
                     </div>
                 </a>
-                <a href="/docs/developer-packages" class={`${card} hover:border-querial-indigo-on-dark/30`} data-doc-title="Packages export import YAML codes">
+                <a href="/docs/developer-packages" class={`${card} hover:border-querial-indigo-on-dark/30`} data-doc-title="Packages export import YAML codes join_mode wait any retry unsafe_for_auto_retry">
                     <div>
                         <p class="font-medium text-sm group-hover:text-querial-indigo-on-dark">Packages</p>
                         <p class="text-xs text-muted-foreground">querial.package/v1 trees. Codes are identity. No secrets.</p>
@@ -145,7 +157,7 @@ const card =
                         <p class="text-xs text-muted-foreground">Bind a version. Promote clones SQL; it never rewrites it.</p>
                     </div>
                 </a>
-                <a href="/docs/devops-scheduling" class={`${card} hover:border-querial-sky/30`} data-doc-title="Scheduling cron runs visualizer">
+                <a href="/docs/devops-scheduling" class={`${card} hover:border-querial-sky/30`} data-doc-title="Scheduling cron runs visualizer wait any ALL ANY badge fail-fast">
                     <div>
                         <p class="font-medium text-sm group-hover:text-querial-sky">Scheduling and runs</p>
                         <p class="text-xs text-muted-foreground">Durable scheduler, full-graph plans, run visualizer.</p>
@@ -157,16 +169,16 @@ const card =
                         <p class="text-xs text-muted-foreground">Pull leases. Keys hashed and project-bound. Git optional.</p>
                     </div>
                 </a>
-                <a href="/docs/devops-artifacts" class={`${card} hover:border-querial-sky/30`} data-doc-title="Artifacts Parquet DuckDB Staged Database SQL">
+                <a href="/docs/devops-artifacts" class={`${card} hover:border-querial-sky/30`} data-doc-title="Artifacts Parquet DuckDB Staged Database SQL wait all join from_step">
                     <div>
                         <p class="font-medium text-sm group-hover:text-querial-sky">Artifacts and Staged Database SQL</p>
                         <p class="text-xs text-muted-foreground">Parquet, S3 or local, embedded DuckDB, the only sink.</p>
                     </div>
                 </a>
-                <a href="/docs/devops-retry" class={`${card} hover:border-querial-sky/30`} data-doc-title="Retry failed cone abandoned unsafe_for_auto_retry">
+                <a href="/docs/devops-retry" class={`${card} hover:border-querial-sky/30`} data-doc-title="Retry failed cone abandoned unsafe_for_auto_retry wait any join seed reuse expand">
                     <div>
                         <p class="font-medium text-sm group-hover:text-querial-sky">Retry and failed-cone recovery</p>
-                        <p class="text-xs text-muted-foreground">In-run retry vs cone. Developers cannot call these APIs.</p>
+                        <p class="text-xs text-muted-foreground">Operator full vs cone. Seed, reuse, expand. Developers are 403.</p>
                     </div>
                 </a>
             </div>

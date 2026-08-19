@@ -36,7 +36,16 @@ import DocsLayout from "../../layouts/docs.astro";
                 Feature flags keep legacy ordered serial execution until DAG execution
                 and registered agents are enabled. Legacy ordered pipelines import as
                 sequential edges. Dedicated worker is the default; in-process is optional
-                for compact local hosts.
+                for compact local hosts. Join mode (Wait all / Wait any on a fan-in
+                consumer) is evaluated only on the DAG path; serial order ignores it.
+                See
+                <a href="/docs/developer-join-mode" class="text-link hover:underline">Wait all and Wait any</a>.
+                In-run retry uses the same snapshot on both paths (serial inner loop vs
+                DAG <code class="text-foreground">retry_waiting</code>). Failed-cone
+                requires DAG execution —
+                <a href="/docs/developer-retry" class="text-link hover:underline">Step retry policies</a>
+                and
+                <a href="/docs/devops-retry" class="text-link hover:underline">Retry and failed-cone recovery</a>.
             </p>
 
             <h2>Optional pieces</h2>

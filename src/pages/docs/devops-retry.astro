@@ -9,6 +9,8 @@ import DocsLayout from "../../layouts/docs.astro";
             <h1 class="text-3xl md:text-4xl font-bold mt-1">Retry and failed-cone recovery</h1>
             <p class="text-muted-foreground mt-2">
                 Same authorization as Retry: DevOps, Project admin, Team-admin inherit, Platform admin. Developer is 403.
+                Authors set in-run policy on
+                <a href="/docs/developer-retry" class="text-link hover:underline">Step retry policies</a>.
             </p>
         </div>
         <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
@@ -18,15 +20,56 @@ import DocsLayout from "../../layouts/docs.astro";
                 step execution: running → retry_waiting → queued, with backoff
                 <code class="text-foreground">delay = backoff × multiplier^(attempt-1)</code>,
                 capped at 900 seconds. Default <code class="text-foreground">retry_max_attempts = 1</code>
-                means off. Writes are default-unsafe for auto-retry; extracts and artifact-sql
-                are default-safe. Unsafe blocks in-run auto-retry only.
+                means off until the published version raises it. Writes are default-unsafe
+                for auto-retry; extracts and artifact-sql are default-safe. Unsafe blocks
+                in-run auto-retry only. There is no auto-cone when in-run attempts exhaust
+                — a human chooses full vs cone.
             </p>
             <p>
                 <strong class="text-foreground">Failed-cone</strong> is a new run that still
                 <em>plans</em> the full graph, skips <em>execution</em> of source succeeded
                 nodes, and rebinds artifacts. It is not a trigger-time subgraph and not
                 “run from step X”. Full retry remains the UI/API default (<code class="text-foreground">mode=full</code>).
-                There is no auto-cone when in-run attempts exhaust — a human chooses full vs cone.
+                Join mode does not change cone selection: a Wait any consumer that already
+                succeeded is reused; parents that failed remain in the cone.
+                <a href="/docs/developer-join-mode" class="text-link hover:underline">Wait all and Wait any</a>.
+            </p>
+
+            <h2>Failed-cone membership</h2>
+            <p>
+                Source run must be failed or abandoned, same project, same deployment,
+                same published version, and the same resolved parameters. Cone is refused
+                if those differ, or if DAG execution is off.
+            </p>
+            <div class="overflow-x-auto not-prose">
+                <table class="w-full text-sm border-collapse">
+                    <thead>
+                        <tr class="border-b border-border text-left">
+                            <th class="py-2 pr-4 font-semibold">Set</th>
+                            <th class="py-2 font-semibold">Members</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-muted-foreground">
+                        <tr class="border-b border-border/50">
+                            <td class="py-2 pr-4 font-medium text-foreground">Seed (execute)</td>
+                            <td class="py-2">Failed or abandoned on the source; also skipped or cancelled (never succeeded).</td>
+                        </tr>
+                        <tr class="border-b border-border/50">
+                            <td class="py-2 pr-4 font-medium text-foreground">Reuse</td>
+                            <td class="py-2">Succeeded on the source. Status stays succeeded with outcome reused — not skipped.</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 pr-4 font-medium text-foreground">Expand</td>
+                            <td class="py-2">A reused producer needed by a seed step whose artifact is missing, not available, expired, or has no checksum is moved back to seed.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>
+                Independent succeeded trees stay in reuse. If every node is seed, the
+                cone still records <code class="text-foreground">retry_mode=failed_cone</code>
+                even though execution looks like a full rerun. Preview lists seed, reuse,
+                expanded producers, and a warning when seed includes write steps.
             </p>
 
             <h2>Policy snapshot</h2>
@@ -47,9 +90,11 @@ import DocsLayout from "../../layouts/docs.astro";
 
             <h2>Artifacts across runs</h2>
             <p>
-                Cone clones artifact rows into the new run. Resolvers never search other
-                runs. Clones copy sensitivity and retention from the source. Audit payload
-                has mode and counts, not URIs or secrets. Retry stays project-scoped.
+                Cone clones artifact rows into the new run (new ids, same store URI and
+                checksum, <code class="text-foreground">reused_from_artifact_id</code>).
+                Resolvers never search other runs. Clones copy sensitivity and retention
+                from the source. Audit payload has mode and counts, not URIs or secrets.
+                Retry stays project-scoped.
             </p>
 
             <h2>Where to click</h2>
@@ -57,6 +102,11 @@ import DocsLayout from "../../layouts/docs.astro";
                 Preview the cone, then Retry / RetryRun, from run details or the schedule
                 run list. Run History index and the visualizer do not expose the button.
                 Missing project returns JSON 400 (not a login challenge) for the AJAX preview.
+            </p>
+            <p>
+                Design-time fields, unsafe defaults, transient classification, and the
+                three clocks (command timeout, lease/grace, cancel):
+                <a href="/docs/developer-retry" class="text-link hover:underline">Step retry policies</a>.
             </p>
         </div>
     </div>

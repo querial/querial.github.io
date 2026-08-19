@@ -79,7 +79,7 @@ import LabsLayout from "../../layouts/labs.astro";
             <ol class="list-decimal pl-5 space-y-2">
                 <li>Create Development endpoints: source = AdventureWorks SQL Server; dest = PostgreSQL warehouse.</li>
                 <li>Run Graph: extract shows an artifact in the inspector; load stays not-ready until the file exists, then stages and executes.</li>
-                <li>If extract succeeds and load fails, retry / failed-cone is an operator action on run details — not on the canvas.</li>
+                <li>If extract succeeds and load fails, retry / failed-cone is an operator action on run details — not on the canvas. See <a href="/docs/devops-retry" class="text-link hover:underline">Retry and failed-cone recovery</a>. In-run auto-retry of the staged load is off by default (writes are unsafe) — <a href="/docs/developer-retry" class="text-link hover:underline">Step retry policies</a>.</li>
             </ol>
 
             <h2>Verify</h2>
