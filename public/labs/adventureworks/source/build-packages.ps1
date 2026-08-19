@@ -1035,8 +1035,8 @@ PostgreSQL branch requires `Querial:Extensions:Artifacts` and `Querial:Extension
         PackageDirectory = "scenario-e-artifacts"
         PackageCode = "aw-scenario-e"
         PackageName = "AdventureWorks Scenario E"
-        PackageDescription = "Full parquet spine: extract -> artifact-sql -> staged loads to SQL Server and PostgreSQL."
-        Revision = "adr0023-lab-v1"
+        PackageDescription = "Parquet spine with DuckDB artifact-sql: single-input casts, multi-input join/aggregate, dual staged sinks."
+        Revision = "duckdb-join-v1"
         Connections = @(
             [pscustomobject]@{ name = "aw-source"; provider = "sqlserver"; description = "AdventureWorks source logical connection stub." }
             [pscustomobject]@{ name = "aw-sql-dest"; provider = "sqlserver"; description = "SQL Server destination logical connection stub." }
@@ -1046,26 +1046,50 @@ PostgreSQL branch requires `Querial:Extensions:Artifacts` and `Querial:Extension
             @{
                 Code = "aw_scenario_e"
                 Name = "AW Scenario E Artifacts"
-                Description = "Extract -> DuckDB artifact-sql -> dual staged sinks (SQL Server + PostgreSQL)."
+                Description = "Extract -> DuckDB artifact-sql (cast + join/aggregate) -> dual staged sinks."
                 Readme = @'
-# AW Scenario E - artifact-sql spine
+# AW Scenario E - Artifact SQL (DuckDB)
 
-Full Parquet / DuckDB path with a **single structural root**.
+Full Parquet path with a **single structural root**. This lab is the Artifact SQL teaching package:
+
+1. Single-input `artifact-sql` (CAST/filter on one Parquet).
+2. Multi-input `artifact-sql` (INNER JOIN + GROUP BY over two Parquet artifacts).
+3. Dual `staged-database-sql` sinks (SQL Server and PostgreSQL) — including the DuckDB rollup table `aw.sales_order_summary`.
+
+There is no database connection on `artifact-sql` steps. DuckDB runs embedded in an eligible agent.
 
 ## Topology (ADR 0023)
 
 ```text
-extract_sales_order (ROOT)
-  |--(artifact_available)-> transform_sales_order (artifact-sql)
+extract_sales_order (ROOT, parquet)
+  |--(artifact_available)-> transform_sales_order (artifact-sql, one input)
   |                           |--> load_sales_order_sqlserver (staged)
   |                           +--> load_sales_order_postgres (staged)
+  |                           +--> transform_order_summary (artifact-sql, TWO inputs)
+  |                                 |--> load_order_summary_sqlserver (staged)
+  |                                 +--> load_order_summary_postgres (staged)
   +--(succeeded)----------> extract_sales_line
-                              +--(artifact_available)-> transform_sales_line (artifact-sql)
+                              +--(artifact_available)-> transform_sales_line (artifact-sql, one input)
                                                           |--> load_sales_line_sqlserver (staged)
                                                           +--> load_sales_line_postgres (staged)
+                                                          +--> transform_order_summary (second input)
 ```
 
 All artifact edges use `artifact_available`. Line extract hangs off the order extract so the graph stays single-root (unlike Lab **C**).
+
+## DuckDB SQL
+
+- `transform_sales_order` / `transform_sales_line` read `{{ input.sales_order }}` / `{{ input.sales_line }}` (one `from_step` each).
+- `transform_order_summary` joins both transformed artifacts:
+
+```sql
+FROM {{ input.sales_order }} AS o
+INNER JOIN {{ input.sales_line }} AS l
+    ON o.sales_order_id = l.sales_order_id
+GROUP BY ...
+```
+
+`config.inputs.<name>.from_step` must match those input names. `config.outputName` is required and unique.
 
 ## Lab contrast
 
@@ -1074,7 +1098,7 @@ All artifact edges use `artifact_available`. Line extract hangs off the order ex
 | **B** | Minimal PG: extract -> staged PG only |
 | **C** | Multi-root forest; SS `sql_command` + PG staged (mixed) |
 | **D** | Topology + failure policy: single-root fan-out |
-| **E** | Full spine: extract -> `artifact-sql` -> dual staged sinks |
+| **E** | Artifact SQL: extract -> DuckDB (cast + join) -> dual staged sinks |
 
 SS staged MERGE scripts are **real steps** here (promoted from C `sql/reference/031_*` / `051_*`).
 
@@ -1091,17 +1115,30 @@ Requires **both**:
 - `Querial:Extensions:Artifacts=true`
 - `Querial:Extensions:DuckDb=true`
 
-Aspire AppHost enables these for local lab runs.
+Enable both flags on your Querial instance.
+
+## Failed-cone recovery (ADR 0027 Lab E)
+
+1. Run the pipeline with `DagExecution=true` (plus Artifacts + DuckDb).
+2. Fail **one** staged sink (for example `load_sales_order_sqlserver`) while the extract, `artifact-sql` transforms, and the sibling sink succeed.
+3. Retry the failed run with mode **failed cone** (not full).
+4. Confirm: the failed sink is the only step leased again; extract and transforms stay `succeeded` with `outcome_reason=reused`; cloned artifact checksums match the source; the sibling sink is not re-executed.
+
+Full retry still re-extracts. Same-agent ArtifactLocalizer cache (no re-download) is not skip-extract.
 '@
                 Migrations = @(
                     [pscustomobject]@{ code = "ss_001_create_schema"; name = "Create aw schema (SQL Server)"; execution_order = 1; connection = "aw-sql-dest"; sql = "sql/migrations/ss/001_create_schema.sql" }
                     [pscustomobject]@{ code = "ss_005_create_sales"; name = "Create aw.sales tables (SQL Server)"; execution_order = 2; connection = "aw-sql-dest"; sql = "sql/migrations/ss/005_create_sales.sql" }
-                    [pscustomobject]@{ code = "pg_001_create_schema"; name = "Create aw schema (PostgreSQL)"; execution_order = 3; connection = "aw-pg-dest"; sql = "sql/migrations/pg/001_create_schema.sql" }
-                    [pscustomobject]@{ code = "pg_005_create_sales"; name = "Create aw.sales tables (PostgreSQL)"; execution_order = 4; connection = "aw-pg-dest"; sql = "sql/migrations/pg/005_create_sales.sql" }
+                    [pscustomobject]@{ code = "ss_006_create_sales_summary"; name = "Create aw.sales_order_summary (SQL Server)"; execution_order = 3; connection = "aw-sql-dest"; sql = "sql/migrations/ss/006_create_sales_summary.sql" }
+                    [pscustomobject]@{ code = "pg_001_create_schema"; name = "Create aw schema (PostgreSQL)"; execution_order = 4; connection = "aw-pg-dest"; sql = "sql/migrations/pg/001_create_schema.sql" }
+                    [pscustomobject]@{ code = "pg_005_create_sales"; name = "Create aw.sales tables (PostgreSQL)"; execution_order = 5; connection = "aw-pg-dest"; sql = "sql/migrations/pg/005_create_sales.sql" }
+                    [pscustomobject]@{ code = "pg_006_create_sales_summary"; name = "Create aw.sales_order_summary (PostgreSQL)"; execution_order = 6; connection = "aw-pg-dest"; sql = "sql/migrations/pg/006_create_sales_summary.sql" }
                 )
                 MigrationDependencies = @(
                     [pscustomobject]@{ from = "ss_001_create_schema"; to = "ss_005_create_sales" }
+                    [pscustomobject]@{ from = "ss_005_create_sales"; to = "ss_006_create_sales_summary" }
                     [pscustomobject]@{ from = "pg_001_create_schema"; to = "pg_005_create_sales" }
+                    [pscustomobject]@{ from = "pg_005_create_sales"; to = "pg_006_create_sales_summary" }
                 )
                 Steps = @(
                     [pscustomobject]@{
@@ -1152,6 +1189,24 @@ Aspire AppHost enables these for local lab runs.
                             inputs     = [ordered]@{
                                 sales_line = [ordered]@{
                                     from_step = "extract_sales_line"
+                                }
+                            }
+                        }
+                    }
+                    [pscustomobject]@{
+                        code            = "transform_order_summary"
+                        name            = "Join orders and lines (DuckDB)"
+                        type            = "artifact-sql"
+                        execution_order = 45
+                        sql             = "sql/steps/045_transform_order_summary.sql"
+                        config          = [ordered]@{
+                            outputName = "order_summary"
+                            inputs     = [ordered]@{
+                                sales_order = [ordered]@{
+                                    from_step = "transform_sales_order"
+                                }
+                                sales_line  = [ordered]@{
+                                    from_step = "transform_sales_line"
                                 }
                             }
                         }
@@ -1260,31 +1315,94 @@ Aspire AppHost enables these for local lab runs.
                             }
                         }
                     }
+                    [pscustomobject]@{
+                        code            = "load_order_summary_sqlserver"
+                        name            = "Load order summary (SQL Server staged)"
+                        type            = "staged-database-sql"
+                        execution_order = 90
+                        connection      = "aw-sql-dest"
+                        sql             = "sql/steps/090_load_order_summary_sqlserver.sql"
+                        config          = [ordered]@{
+                            stages = [ordered]@{
+                                order_summary = [ordered]@{
+                                    from_step = "transform_order_summary"
+                                    columns   = @(
+                                        (New-StageColumn -Source "sales_order_id" -Type "int")
+                                        (New-StageColumn -Source "customer_id" -Type "int")
+                                        (New-StageColumn -Source "order_day" -Type "date")
+                                        (New-StageColumn -Source "line_count" -Type "int")
+                                        (New-StageColumn -Source "total_qty" -Type "int")
+                                        (New-StageColumn -Source "computed_line_total" -Type "numeric")
+                                        (New-StageColumn -Source "header_total_due" -Type "numeric")
+                                    )
+                                }
+                            }
+                            transaction = [ordered]@{
+                                mode = "stage-and-execute"
+                            }
+                        }
+                    }
+                    [pscustomobject]@{
+                        code            = "load_order_summary_postgres"
+                        name            = "Load order summary (PostgreSQL)"
+                        type            = "staged-database-sql"
+                        execution_order = 100
+                        connection      = "aw-pg-dest"
+                        sql             = "sql/steps/100_load_order_summary_postgres.sql"
+                        config          = [ordered]@{
+                            stages = [ordered]@{
+                                order_summary = [ordered]@{
+                                    from_step = "transform_order_summary"
+                                    columns   = @(
+                                        (New-StageColumn -Source "sales_order_id" -Type "int")
+                                        (New-StageColumn -Source "customer_id" -Type "int")
+                                        (New-StageColumn -Source "order_day" -Type "date")
+                                        (New-StageColumn -Source "line_count" -Type "int")
+                                        (New-StageColumn -Source "total_qty" -Type "int")
+                                        (New-StageColumn -Source "computed_line_total" -Type "numeric")
+                                        (New-StageColumn -Source "header_total_due" -Type "numeric")
+                                    )
+                                }
+                            }
+                            transaction = [ordered]@{
+                                mode = "stage-and-execute"
+                            }
+                        }
+                    }
                 )
                 Dependencies = @(
                     [pscustomobject]@{ from = "extract_sales_order"; to = "extract_sales_line"; requirement = "succeeded" }
                     [pscustomobject]@{ from = "extract_sales_order"; to = "transform_sales_order"; requirement = "artifact_available" }
                     [pscustomobject]@{ from = "extract_sales_line"; to = "transform_sales_line"; requirement = "artifact_available" }
+                    [pscustomobject]@{ from = "transform_sales_order"; to = "transform_order_summary"; requirement = "artifact_available" }
+                    [pscustomobject]@{ from = "transform_sales_line"; to = "transform_order_summary"; requirement = "artifact_available" }
                     [pscustomobject]@{ from = "transform_sales_order"; to = "load_sales_order_sqlserver"; requirement = "artifact_available" }
                     [pscustomobject]@{ from = "transform_sales_order"; to = "load_sales_order_postgres"; requirement = "artifact_available" }
                     [pscustomobject]@{ from = "transform_sales_line"; to = "load_sales_line_sqlserver"; requirement = "artifact_available" }
                     [pscustomobject]@{ from = "transform_sales_line"; to = "load_sales_line_postgres"; requirement = "artifact_available" }
+                    [pscustomobject]@{ from = "transform_order_summary"; to = "load_order_summary_sqlserver"; requirement = "artifact_available" }
+                    [pscustomobject]@{ from = "transform_order_summary"; to = "load_order_summary_postgres"; requirement = "artifact_available" }
                     [pscustomobject]@{ from = "load_sales_order_sqlserver"; to = "load_sales_line_sqlserver"; requirement = "required" }
                     [pscustomobject]@{ from = "load_sales_order_postgres"; to = "load_sales_line_postgres"; requirement = "required" }
                 )
                 SqlCopies = @(
                     [pscustomobject]@{ Source = "migrations/sqlserver/001_create_schema.sql"; Target = "sql/migrations/ss/001_create_schema.sql" }
                     [pscustomobject]@{ Source = "migrations/sqlserver/005_create_sales.sql"; Target = "sql/migrations/ss/005_create_sales.sql" }
+                    [pscustomobject]@{ Source = "migrations/sqlserver/006_create_sales_summary.sql"; Target = "sql/migrations/ss/006_create_sales_summary.sql" }
                     [pscustomobject]@{ Source = "migrations/postgres/001_create_schema.sql"; Target = "sql/migrations/pg/001_create_schema.sql" }
                     [pscustomobject]@{ Source = "migrations/postgres/005_create_sales.sql"; Target = "sql/migrations/pg/005_create_sales.sql" }
+                    [pscustomobject]@{ Source = "migrations/postgres/006_create_sales_summary.sql"; Target = "sql/migrations/pg/006_create_sales_summary.sql" }
                     [pscustomobject]@{ Source = "steps/E-artifacts/010_extract_sales_order.sql"; Target = "sql/steps/010_extract_sales_order.sql" }
                     [pscustomobject]@{ Source = "steps/E-artifacts/020_extract_sales_line.sql"; Target = "sql/steps/020_extract_sales_line.sql" }
                     [pscustomobject]@{ Source = "steps/E-artifacts/030_transform_sales_order.sql"; Target = "sql/steps/030_transform_sales_order.sql" }
                     [pscustomobject]@{ Source = "steps/E-artifacts/040_transform_sales_line.sql"; Target = "sql/steps/040_transform_sales_line.sql" }
+                    [pscustomobject]@{ Source = "steps/E-artifacts/045_transform_order_summary.sql"; Target = "sql/steps/045_transform_order_summary.sql" }
                     [pscustomobject]@{ Source = "steps/E-artifacts/050_load_sales_order_sqlserver.sql"; Target = "sql/steps/050_load_sales_order_sqlserver.sql" }
                     [pscustomobject]@{ Source = "steps/E-artifacts/060_load_sales_order_postgres.sql"; Target = "sql/steps/060_load_sales_order_postgres.sql" }
                     [pscustomobject]@{ Source = "steps/E-artifacts/070_load_sales_line_sqlserver.sql"; Target = "sql/steps/070_load_sales_line_sqlserver.sql" }
                     [pscustomobject]@{ Source = "steps/E-artifacts/080_load_sales_line_postgres.sql"; Target = "sql/steps/080_load_sales_line_postgres.sql" }
+                    [pscustomobject]@{ Source = "steps/E-artifacts/090_load_order_summary_sqlserver.sql"; Target = "sql/steps/090_load_order_summary_sqlserver.sql" }
+                    [pscustomobject]@{ Source = "steps/E-artifacts/100_load_order_summary_postgres.sql"; Target = "sql/steps/100_load_order_summary_postgres.sql" }
                 )
             }
         )

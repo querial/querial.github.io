@@ -1,16 +1,15 @@
--- Scenario E: DuckDB transform over extract Parquet → new Parquet.
+-- Scenario E: DuckDB single-input transform over extract Parquet → new Parquet.
 -- Pipeline step code: transform_sales_line
--- Step type: artifact-sql
--- No database connection (artifact in → artifact out).
+-- Step type: artifact-sql (no database connection)
 -- Depends on: extract_sales_line (artifact_available)
 -- Input name: sales_line
 
 SELECT
-    sales_order_id,
-    sales_order_detail_id,
-    product_id,
-    order_qty,
-    unit_price,
-    line_total
+    CAST(sales_order_id AS INTEGER) AS sales_order_id,
+    CAST(sales_order_detail_id AS INTEGER) AS sales_order_detail_id,
+    CAST(product_id AS INTEGER) AS product_id,
+    CAST(order_qty AS INTEGER) AS order_qty,
+    CAST(unit_price AS DECIMAL(19, 4)) AS unit_price,
+    CAST(line_total AS DECIMAL(19, 4)) AS line_total
 FROM {{ input.sales_line }}
 WHERE order_qty > 0;

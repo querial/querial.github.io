@@ -37,10 +37,10 @@ const scenarios = [
     {
         href: "/labs/scenario-e",
         code: "E",
-        title: "Artifact spine",
+        title: "Artifact SQL (DuckDB)",
         package: "aw-scenario-e",
         zip: "/labs/adventureworks/downloads/scenario-e-artifacts.zip",
-        summary: "Extract → DuckDB artifact-sql → dual staged sinks. Full Parquet path.",
+        summary: "DuckDB artifact-sql: CAST filters, then a two-input JOIN/aggregate to aw.sales_order_summary on both destinations.",
     },
 ];
 ---

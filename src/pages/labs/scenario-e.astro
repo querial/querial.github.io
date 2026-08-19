@@ -2,16 +2,17 @@
 import LabsLayout from "../../layouts/labs.astro";
 ---
 
-<LabsLayout title="Scenario E — Artifact spine — Querial Labs" active="e">
+<LabsLayout title="Scenario E — Artifact SQL (DuckDB) — Querial Labs" active="e">
     <div class="space-y-8">
         <div>
             <p class="text-xs font-semibold uppercase tracking-wider text-querial-indigo-on-dark">Scenario E</p>
-            <h1 class="text-3xl md:text-4xl font-bold mt-1">Artifact spine</h1>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Artifact SQL (DuckDB)</h1>
             <p class="text-muted-foreground mt-3">
-                Full produce → transform → consume path. One structural root. DuckDB
-                <code class="text-foreground">artifact-sql</code> between extracts and
-                dual staged sinks (SQL Server and PostgreSQL). SS staged MERGE scripts
-                are real steps here (promoted from C’s reference files).
+                This is the lab that shows how <code class="text-foreground">artifact-sql</code>
+                works. DuckDB runs <strong class="text-foreground">inside an eligible agent</strong>
+                — no extra warehouse, no connection on the transform step. You will run
+                single-input CAST/filter steps, then a <strong class="text-foreground">two-input JOIN + GROUP BY</strong>
+                that writes <code class="text-foreground">aw.sales_order_summary</code> on both destinations.
             </p>
         </div>
         <div class="flex flex-wrap gap-2">
@@ -28,62 +29,85 @@ import LabsLayout from "../../layouts/labs.astro";
         </div>
 
         <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
-            <h2>Why this lab</h2>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="text-left border-b border-border/50">
-                            <th class="py-2 pr-3">Lab</th>
-                            <th class="py-2">Focus</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-muted-foreground">
-                        <tr class="border-b border-border/30"><td class="py-2 pr-3 font-medium text-foreground">B</td><td>Minimal PG: extract → staged PG</td></tr>
-                        <tr class="border-b border-border/30"><td class="py-2 pr-3 font-medium text-foreground">C</td><td>Multi-root; SS sql_command + PG staged</td></tr>
-                        <tr class="border-b border-border/30"><td class="py-2 pr-3 font-medium text-foreground">D</td><td>Single-root fan-out + continue on SS</td></tr>
-                        <tr><td class="py-2 pr-3 font-medium text-foreground">E</td><td>Extract → artifact-sql → dual staged sinks</td></tr>
-                    </tbody>
-                </table>
-            </div>
+            <h2>What Artifact SQL is for</h2>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Read one or more Parquet artifacts from earlier steps in the <strong class="text-foreground">same run</strong>.</li>
+                <li>Author ordinary SQL. DuckDB registers each input as <code class="text-foreground">{"{{ input.name }}"}</code>.</li>
+                <li>Write a new Parquet (<code class="text-foreground">config.outputName</code>). Downstream staged sinks consume that file.</li>
+                <li>No logical connection, no schema source, no secrets. <code class="text-foreground">from_step</code> must point at a Succeeded producer.</li>
+            </ul>
 
             <h2>Package</h2>
             <ul class="list-disc pl-5 space-y-1">
-                <li>Package <code class="text-foreground">aw-scenario-e</code>, pipeline <code class="text-foreground">aw_scenario_e</code>.</li>
-                <li>Three stubs: <code class="text-foreground">aw-source</code>, <code class="text-foreground">aw-sql-dest</code>, <code class="text-foreground">aw-pg-dest</code>.</li>
+                <li>Package <code class="text-foreground">aw-scenario-e</code>, pipeline <code class="text-foreground">aw_scenario_e</code>, revision <code class="text-foreground">duckdb-join-v1</code>.</li>
+                <li>Stubs: <code class="text-foreground">aw-source</code>, <code class="text-foreground">aw-sql-dest</code>, <code class="text-foreground">aw-pg-dest</code>.</li>
             </ul>
 
             <h2>Topology</h2>
             <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>extract_sales_order (ROOT, parquet)
-  ├─(artifact_available)→ transform_sales_order (artifact-sql, DuckDB)
-  │                         ├─(artifact_available)→ load_sales_order_sqlserver (staged)
-  │                         └─(artifact_available)→ load_sales_order_postgres (staged)
-  └─(succeeded)→ extract_sales_line
-                   └─(artifact_available)→ transform_sales_line (artifact-sql)
-                                             ├─→ load_sales_line_sqlserver (staged)
-                                             └─→ load_sales_line_postgres (staged)
-
-Line loads also require the matching order load (required) on each destination.</code></pre>
+  ├─ transform_sales_order (artifact-sql, one input: CAST/filter)
+  │     ├─ load_sales_order_sqlserver / load_sales_order_postgres
+  │     └─ transform_order_summary (artifact-sql, TWO inputs: JOIN + GROUP BY)
+  │           ├─ load_order_summary_sqlserver
+  │           └─ load_order_summary_postgres
+  └─ extract_sales_line (succeeded)
+        └─ transform_sales_line (artifact-sql, one input)
+              ├─ load_sales_line_* (also waits on matching order load)
+              └─ transform_order_summary (second input)</code></pre>
             <p>
-                Line extract hangs off the order extract so the graph stays single-root
-                (unlike C). All artifact edges use <code class="text-foreground">artifact_available</code>.
+                One structural root. All transform/sink edges are
+                <code class="text-foreground">artifact_available</code>.
             </p>
 
-            <h2>artifact-sql config</h2>
+            <h2>DuckDB steps in this package</h2>
+            <h3 class="text-foreground text-lg font-semibold">1. Single-input CAST</h3>
             <p>
-                Transforms have <code class="text-foreground">config.outputName</code>
-                (<code class="text-foreground">sales_order_transformed</code> /
-                <code class="text-foreground">sales_line_transformed</code>) and
-                <code class="text-foreground">config.inputs.&lt;name&gt;.from_step</code>.
-                DuckDB SQL references inputs with the package token form
-                <code class="text-foreground">{"{{ input.name }}"}</code>.
-                Eligible agents run DuckDB embedded — not a separate warehouse you manage.
-                <code class="text-foreground">from_step</code> is same-run only and requires
-                the producer Succeeded.
+                <code class="text-foreground">transform_sales_order</code> /
+                <code class="text-foreground">transform_sales_line</code> each have one
+                <code class="text-foreground">config.inputs</code> entry. SQL uses
+                <code class="text-foreground">CAST(...)</code> and a filter so the join
+                consumes typed Parquet, not the raw extract.
             </p>
+            <h3 class="text-foreground text-lg font-semibold">2. Multi-input JOIN + aggregate</h3>
             <p>
-                Staged sinks bind <code class="text-foreground">from_step</code> to the
-                transform, not the extract. Column contracts match the transformed schema.
-                <code class="text-foreground">transaction.mode: stage-and-execute</code>.
+                <code class="text-foreground">transform_order_summary</code> is the teaching step:
+            </p>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>config:
+  outputName: order_summary
+  inputs:
+    sales_order:
+      from_step: transform_sales_order
+    sales_line:
+      from_step: transform_sales_line</code></pre>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>SELECT
+    o.sales_order_id,
+    o.customer_id,
+    CAST(o.order_date AS DATE) AS order_day,
+    COUNT(*) AS line_count,
+    SUM(l.order_qty) AS total_qty,
+    SUM(l.line_total) AS computed_line_total,
+    o.total_due AS header_total_due
+FROM {"{{ input.sales_order }}"} AS o
+INNER JOIN {"{{ input.sales_line }}"} AS l
+    ON o.sales_order_id = l.sales_order_id
+GROUP BY
+    o.sales_order_id,
+    o.customer_id,
+    CAST(o.order_date AS DATE),
+    o.total_due;</code></pre>
+            <p>
+                Input names in SQL must match the <code class="text-foreground">config.inputs</code> keys.
+                The staged loads bind <code class="text-foreground">from_step: transform_order_summary</code>
+                and upsert <code class="text-foreground">aw.sales_order_summary</code>.
+            </p>
+
+            <h2>Migrations (E-only summary table)</h2>
+            <p>
+                Shared sales tables plus
+                <code class="text-foreground">ss_006_create_sales_summary</code> /
+                <code class="text-foreground">pg_006_create_sales_summary</code>
+                after <code class="text-foreground">005</code>. Use deployment
+                <code class="text-foreground">before_run</code> on first pass.
             </p>
 
             <h2>Flags (required)</h2>
@@ -91,21 +115,31 @@ Line loads also require the matching order load (required) on each destination.<
                 <li><code class="text-foreground">Querial:Extensions:Artifacts=true</code></li>
                 <li><code class="text-foreground">Querial:Extensions:DuckDb=true</code></li>
             </ul>
-            <p>Both destinations use staged handlers, so both flags apply even for the SQL Server half.</p>
+            <p>Every transform and every sink in E needs both. Agents must advertise DuckDB.</p>
 
             <h2>Walkthrough extras</h2>
             <ol class="list-decimal pl-5 space-y-2">
-                <li>Import, resolve all three connections, Development endpoints on each.</li>
+                <li>Import the zip. Resolve all three connections.</li>
+                <li>Designer: three DuckDB nodes (no connection badge on them). <code class="text-foreground">transform_order_summary</code> has two inbound artifact edges.</li>
                 <li>Publish: one root — no multi-root warning.</li>
-                <li>Deployment: <code class="text-foreground">before_run</code> migrations, Development, activate, trigger.</li>
-                <li>Run Graph: watch extract → transform (DuckDB) → both sinks. Inspector artifacts on transform and on each load. SQL tab shows published DuckDB and staged MERGE, not the draft.</li>
-                <li>If a sink fails after transforms succeeded, failed-cone retry can reuse succeeded steps and clone artifacts (DevOps on run details).</li>
+                <li>Run Graph: extract → CAST transforms → join step → six sinks (order, line, summary × two dests). Inspector on the join step lists two input artifacts and output <code class="text-foreground">order_summary</code>. SQL tab is the published DuckDB, not the draft.</li>
+                <li>Failed-cone: fail one staged sink; retry cone; extracts and DuckDB steps should stay Succeeded / reused.</li>
             </ol>
 
             <h2>Verify</h2>
             <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>SELECT COUNT(*) FROM aw.sales_order;
-SELECT COUNT(*) FROM aw.sales_line;</code></pre>
-            <p>Run on both destinations. Counts should match each other after a healthy run (same transformed grain).</p>
+SELECT COUNT(*) FROM aw.sales_order_line;
+SELECT COUNT(*) FROM aw.sales_order_summary;
+-- line_count should match lines for that order
+SELECT TOP 20 sales_order_id, line_count, total_qty, computed_line_total, header_total_due
+FROM aw.sales_order_summary
+ORDER BY sales_order_id;</code></pre>
+            <p>
+                Run the counts on both destinations. Summary grain is one row per order that
+                still had lines after the CAST filters. PostgreSQL uses
+                <code class="text-foreground">LIMIT 20</code> instead of
+                <code class="text-foreground">TOP 20</code>.
+            </p>
         </div>
     </div>
 </LabsLayout>

@@ -130,6 +130,23 @@ import LabsLayout from "../../layouts/labs.astro";
                 if the pipeline code already exists.
             </p>
 
+            <h2>Artifact SQL in the packer (Scenario E)</h2>
+            <p>
+                Scenario E is the DuckDB teaching package. The script emits three
+                <code class="text-foreground">artifact-sql</code> steps (no
+                <code class="text-foreground">connection</code>):
+            </p>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Single-input CAST/filter: <code class="text-foreground">transform_sales_order</code>, <code class="text-foreground">transform_sales_line</code>.</li>
+                <li>Two-input JOIN + GROUP BY: <code class="text-foreground">transform_order_summary</code> with <code class="text-foreground">config.inputs.sales_order</code> and <code class="text-foreground">config.inputs.sales_line</code>, both <code class="text-foreground">from_step</code> of the CAST transforms.</li>
+            </ul>
+            <p>
+                Canonical SQL lives in <code class="text-foreground">steps/E-artifacts/</code>
+                (including <code class="text-foreground">045_transform_order_summary.sql</code>)
+                and E-only migrations <code class="text-foreground">006_create_sales_summary.sql</code>.
+                Edit those files, then re-run the script — do not hand-edit generated YAML.
+            </p>
+
             <h2>verify-connections.ps1</h2>
             <p>
                 Optional pre-flight. It does <strong class="text-foreground">not</strong>
