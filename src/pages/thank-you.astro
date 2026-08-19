@@ -1,0 +1,63 @@
+---
+import Layout from "../layouts/main.astro";
+import { CheckCircle2, BookOpen, FlaskConical } from "lucide-react";
+
+const title = "Thank you — Querial";
+---
+
+<Layout {title}>
+    <section class="py-20 md:py-32">
+        <div class="container mx-auto px-4">
+            <div class="max-w-2xl mx-auto text-center">
+                <div class="inline-flex p-4 rounded-2xl bg-gradient-to-br from-querial-indigo to-querial-sky mb-6">
+                    <CheckCircle2 class="h-8 w-8 text-white" />
+                </div>
+                <h1 class="text-4xl md:text-5xl font-bold mb-4">
+                    Thank{" "}
+                    <span class="bg-gradient-to-r from-querial-indigo to-querial-indigo-on-dark bg-clip-text text-transparent">
+                        you
+                    </span>
+                </h1>
+                <p class="text-lg text-muted-foreground mb-12">
+                    Your message is on its way. We read everything that comes
+                    through and will get back to you as soon as we can.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+                    <a
+                        href="/docs"
+                        class="group p-6 rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg shadow-querial-indigo/5 hover:border-querial-indigo/50 transition-colors"
+                    >
+                        <div class="inline-flex p-2.5 rounded-xl bg-gradient-to-br from-querial-indigo to-querial-indigo-on-dark mb-3">
+                            <BookOpen class="h-5 w-5 text-white" />
+                        </div>
+                        <h2 class="font-semibold mb-1">Browse the docs</h2>
+                        <p class="text-sm text-muted-foreground">
+                            Guides for Developers, DevOps, and Platform, Team,
+                            and Project admins.
+                        </p>
+                    </a>
+                    <a
+                        href="/labs"
+                        class="group p-6 rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg shadow-querial-indigo/5 hover:border-querial-indigo/50 transition-colors"
+                    >
+                        <div class="inline-flex p-2.5 rounded-xl bg-gradient-to-br from-querial-sky to-querial-indigo mb-3">
+                            <FlaskConical class="h-5 w-5 text-white" />
+                        </div>
+                        <h2 class="font-semibold mb-1">Try the labs</h2>
+                        <p class="text-sm text-muted-foreground">
+                            AdventureWorks packages you can import and run.
+                        </p>
+                    </a>
+                </div>
+
+                <a
+                    href="/"
+                    class="inline-flex items-center justify-center h-10 px-6 rounded-md border bg-background hover:bg-accent hover:text-accent-foreground transition-colors mt-10"
+                >
+                    Back to Querial
+                </a>
+            </div>
+        </div>
+    </section>
+</Layout>

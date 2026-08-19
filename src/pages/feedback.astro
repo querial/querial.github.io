@@ -370,14 +370,8 @@ const web3formsAccessKey =
                 const data = await response.json();
 
                 if (response.ok) {
-                    form.reset();
-                    scheduleHcaptchaReset(form);
-                    showToast(
-                        "success",
-                        "Message sent",
-                        "Thanks for reaching out. We will get back to you soon.",
-                        7000,
-                    );
+                    window.location.assign("/thank-you");
+                    return;
                 } else {
                     showToast(
                         "error",

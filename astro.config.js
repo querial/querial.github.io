@@ -7,6 +7,9 @@ import tailwind from '@astrojs/tailwind';
 export default defineConfig({
   site: 'https://querial.github.io',
   base: '/',
+  redirects: {
+    "/thankyou": "/thank-you",
+  },
   integrations: [
     react(),
     tailwind({
