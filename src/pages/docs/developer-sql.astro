@@ -38,12 +38,15 @@ import DocsLayout from "../../layouts/docs.astro";
 
             <h2>SqlAssist</h2>
             <p>
-                Assistance can propose SQL against the cached schema and the pipeline
-                contract. It never auto-publishes. A human reviews, edits, and publishes.
-                Embeddings and chat history live on the control database (PostgreSQL 18
-                with pgvector). For artifact sinks, assistance must emit logical tokens
-                such as <code class="text-foreground">{"{{ stage.name }}"}</code>, never
-                physical temp table names or secrets.
+                Assistance proposes SQL against a <strong class="text-foreground">schema source</strong>
+                (a design-time catalog) and the pipeline contract. It never auto-publishes.
+                A human reviews, edits, and publishes. Embeddings and chat history live
+                on the control database (PostgreSQL 18 with pgvector). For artifact sinks,
+                assistance must emit logical tokens such as
+                <code class="text-foreground">{"{{ stage.name }}"}</code> and
+                <code class="text-foreground">{"{{ input.name }}"}</code>, never physical
+                temp table names or secrets. Dedicated walkthrough:
+                <a href="/docs/developer-sql-assist" class="text-link hover:underline">SQL Assist</a>.
             </p>
 
             <h2>Step handlers</h2>
@@ -53,6 +56,7 @@ import DocsLayout from "../../layouts/docs.astro";
                     <tbody class="text-muted-foreground">
                         <tr class="border-b border-border/50"><td class="py-2 pr-4 text-foreground">sql_command / sql_query / stored_procedure / validation_query / database-sql</td><td class="py-2">Dialect SQL on the bound target. Default unsafe for auto-retry.</td></tr>
                         <tr class="border-b border-border/50"><td class="py-2 pr-4 text-foreground">database-query-to-parquet</td><td class="py-2">Capture a result set as Parquet. Default safe for auto-retry.</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 text-foreground">external-parquet</td><td class="py-2">Structural root seeded from an uploaded file at trigger. No SQL, no connection. Default safe. Not schedulable. <a href="/docs/developer-external-parquet" class="text-link hover:underline">External Parquet ingest</a>.</td></tr>
                         <tr class="border-b border-border/50"><td class="py-2 pr-4 text-foreground">artifact-sql</td><td class="py-2">DuckDB SQL over Parquet inputs on an eligible agent. Default safe.</td></tr>
                         <tr><td class="py-2 pr-4 text-foreground">staged-database-sql</td><td class="py-2">The only database sink. Bulk-load, then your merge SQL. Default unsafe for auto-retry. No ArtifactToTable.</td></tr>
                     </tbody>

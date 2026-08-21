@@ -29,7 +29,19 @@ const roadmapItems = [
     {
         title: "Packages, optional Git, API keys",
         description:
-            "querial.package/v1 export/import, optional Git remotes, project-bound API keys with hashed secrets and idempotent run triggers.",
+            "querial.package/v1 export/import, optional Git remotes, project- and deployment-scoped API keys with hashed secrets and idempotent run triggers.",
+        status: "done",
+    },
+    {
+        title: "External Parquet ingest and parameterized trigger",
+        description:
+            "external-parquet structural roots. Multipart POST /api/trigger plus Web Run now. Trigger-time parameters. Schedules refused on ingest versions.",
+        status: "done",
+    },
+    {
+        title: "Schema sources and SQL Assist",
+        description:
+            "Design-time catalogs, pgvector retrieval, draft-only generation. Developers run Development SQL only. Operators refresh and re-index.",
         status: "done",
     },
     {

@@ -1,0 +1,154 @@
+---
+import DocsLayout from "../../layouts/docs.astro";
+---
+
+<DocsLayout title="Trigger API and Run now — Querial">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-sky">For DevOps</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Trigger API and Run now</h1>
+        </div>
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground [&>h3]:text-foreground">
+            <p>
+                External systems start a published deployment with
+                <code class="text-foreground">POST /api/trigger</code> on the API host,
+                using a Bearer API key. Web <strong class="text-foreground">Run now</strong>
+                uses the same contract (session cookie). Schedules create runs without a
+                body; they cannot attach Parquet files. Developers design the graph;
+                this role mints keys, binds deployments, and calls the API.
+            </p>
+
+            <h2>API keys</h2>
+            <p>
+                Keys live under Workers in Workspace. Prefix
+                <code class="text-foreground">qk_</code>, SHA-256 at rest, shown in full
+                once. Scopes: <code class="text-foreground">trigger_run</code>,
+                <code class="text-foreground">view_status</code>,
+                <code class="text-foreground">cancel_run</code>, with optional environment
+                restriction. A key cannot act as Platform admin and cannot reach another
+                project.
+            </p>
+            <div class="overflow-x-auto not-prose">
+                <table class="w-full text-sm">
+                    <thead><tr class="border-b border-border text-left"><th class="py-2 pr-4">Kind</th><th class="py-2 pr-4">Bound deployment</th><th class="py-2">May call</th></tr></thead>
+                    <tbody class="text-muted-foreground">
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 text-foreground">Project-scoped</td><td class="py-2 pr-4">None</td><td class="py-2">Any deployment in that project (then env scopes). <code class="text-foreground">deploymentId</code> required on trigger.</td></tr>
+                        <tr><td class="py-2 pr-4 text-foreground">Deployment-scoped</td><td class="py-2 pr-4">One deployment</td><td class="py-2">Only that deployment. Mismatch is 404. <code class="text-foreground">deploymentId</code> may be omitted or must match.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>
+                Primary UX: generate from Deployment details. Api Keys admin can create
+                either kind. Project setting
+                <code class="text-foreground">allow_project_scoped_api_keys</code>
+                (default on): when off, existing project-scoped keys stay listed, but
+                trigger / contract / status / cancel return <strong class="text-foreground">403</strong>.
+                New project-scoped create is 400. Rotate of an existing project-scoped
+                row is allowed; the new secret still 403s until the setting is on.
+                Deployment-scoped keys are unaffected. Toggle is project Admin.
+            </p>
+            <p>
+                Cross-project or a bound key aimed at the wrong deployment is
+                <strong class="text-foreground">404</strong>, not 403 — do not use status
+                codes to probe other projects.
+            </p>
+
+            <h2>Trigger contract</h2>
+            <p>
+                Before you POST, load the schema the version actually needs:
+            </p>
+            <ul class="list-disc pl-5 space-y-1">
+                <li><code class="text-foreground">GET /api/deployments/{"{id}"}/trigger-contract</code> — Bearer or session</li>
+                <li><code class="text-foreground">GET /api/trigger-contract</code> — deployment-scoped keys only</li>
+            </ul>
+            <p>
+                The payload lists parameter codes with <code class="text-foreground">paramType</code>
+                and effective values, plus parquet input slots (<code class="text-foreground">outputName</code>,
+                resolved <code class="text-foreground">retentionDays</code>). Secrets on
+                the contract are redacted or omitted. Web Run now renders the same form.
+            </p>
+
+            <h2>JSON trigger (parameters only)</h2>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>{`POST /api/trigger
+Authorization: Bearer qk_…
+Content-Type: application/json
+
+{
+  "deploymentId": "…",
+  "idempotencyKey": "customer-a-2026-07-30",
+  "parameters": {
+    "windowStart": "2026-07-30T00:00:00Z"
+  }
+}`}</code></pre>
+            <p>
+                If the published version has any
+                <code class="text-foreground">external-parquet</code> step, JSON is
+                <strong class="text-foreground">400</strong> — use multipart. Unknown
+                parameter codes, empty required values, and type mismatches are 400.
+                Pool / agent / <code class="text-foreground">assignment</code> JSON is
+                not accepted.
+            </p>
+
+            <h2>Multipart trigger (parameters and files)</h2>
+            <p>
+                One request. Parts:
+            </p>
+            <ul class="list-disc pl-5 space-y-1">
+                <li><code class="text-foreground">deploymentId</code> — required for project-scoped keys</li>
+                <li><code class="text-foreground">idempotencyKey</code> — optional</li>
+                <li><code class="text-foreground">parameters</code> — UTF-8 JSON object (same map as JSON trigger)</li>
+                <li>One file named <code class="text-foreground">parquet.{"{outputName}"}</code> per ingest slot</li>
+            </ul>
+            <p>
+                Extra parts, missing required files, garbage bytes, or oversize uploads
+                are 400 with <em>no</em> run created. Success is
+                <strong class="text-foreground">200</strong>
+                <code class="text-foreground">{"{ runId, isIdempotentReplay }"}</code>.
+            </p>
+
+            <h2>Parameter merge</h2>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>effective[code] = trigger overlay ?? deployment override ?? pipeline default</code></pre>
+            <p>
+                Types: <code class="text-foreground">string</code>,
+                <code class="text-foreground">integer</code>,
+                <code class="text-foreground">decimal</code>,
+                <code class="text-foreground">boolean</code>,
+                <code class="text-foreground">datetime</code>,
+                <code class="text-foreground">date</code>. Plan JSON stays redacted;
+                the overlay is stored for execution bind. Uploading Parquet does not
+                skip this validation.
+            </p>
+
+            <h2>Idempotency</h2>
+            <p>
+                Unique per <code class="text-foreground">(project, deployment, key)</code>
+                for 24 hours. Fingerprint is the canonical merged parameter map (secret-like
+                values hashed) plus sorted <code class="text-foreground">outputName → SHA-256</code>
+                of each file. Same key and same fingerprint replays
+                (<code class="text-foreground">isIdempotentReplay: true</code>). Same key,
+                different params or bytes → <strong class="text-foreground">409</strong>.
+            </p>
+
+            <h2>Web Run now</h2>
+            <p>
+                If the contract has any parameters or any parquet inputs, the modal
+                opens. One-click remains only when both arrays are empty. Empty secret
+                fields mean “keep the deployment value.” Developers cannot trigger
+                Production via a key any more than they can in the UI.
+            </p>
+
+            <h2>Status and cancel</h2>
+            <p>
+                Same Bearer key. Use the scopes minted on the key. Disabled project-scoped
+                keys 403 on these routes too. Feature flag for API keys off → 503 on the
+                anonymous Bearer route.
+            </p>
+            <p>
+                Ingest versions cannot be scheduled —
+                <a href="/docs/developer-external-parquet" class="text-link hover:underline">External Parquet ingest</a>.
+                Keys overview also lives on
+                <a href="/docs/devops-agents" class="text-link hover:underline">Agents, API keys, and Git</a>.
+            </p>
+        </div>
+    </div>
+</DocsLayout>

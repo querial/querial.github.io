@@ -17,7 +17,7 @@ import DocsLayout from "../../layouts/docs.astro";
             <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>Pipeline design
     → versioned SQL steps and migrations
     → deployment to one or more connections
-    → scheduled or manual execution
+    → scheduled, manual, or API-triggered execution
     → target-local processing
     → central execution and audit records</code></pre>
 
@@ -33,14 +33,16 @@ import DocsLayout from "../../layouts/docs.astro";
                     <tbody class="text-muted-foreground">
                         <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Pipeline</td><td class="py-2">Named design: steps, migrations, parameters, edges.</td></tr>
                         <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Version</td><td class="py-2">Published snapshot. Immutable DAG.</td></tr>
-                        <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Step</td><td class="py-2">Handler + SQL or properties, bound to a logical connection.</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Step</td><td class="py-2">Handler + SQL or properties. Most bind a logical connection; external-parquet and artifact-sql do not.</td></tr>
                         <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Join mode</td><td class="py-2">On a fan-in consumer: Wait all (every inbound edge) or Wait any (first satisfied edge). Not a separate wait node. Wait any is control-only.</td></tr>
                         <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Retry policy</td><td class="py-2">Pipeline defaults plus per-step overrides for in-run auto-retry. Default max attempts is 1 (off). Writes default unsafe. Failed-cone is a separate operator run.</td></tr>
                         <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Migration</td><td class="py-2">Ordered, run-once SQL. History lives on the target.</td></tr>
-                        <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Connection</td><td class="py-2">Logical name + provider; encrypted endpoints per EnvironmentKind.</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Connection</td><td class="py-2">Logical name + provider; encrypted endpoints per EnvironmentKind. Runtime bind.</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Schema source</td><td class="py-2">Design-time catalog for browse, Monaco, and SQL Assist. One fetch secret, no environment. Not a pipeline connection.</td></tr>
                         <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">EnvironmentKind</td><td class="py-2">Closed set: development, staging, production.</td></tr>
                         <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Deployment</td><td class="py-2">Binding of a version to an environment kind, parameters, optional schedule.</td></tr>
                         <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Run</td><td class="py-2">One execution of one deployed version against resolved endpoints.</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Trigger</td><td class="py-2">POST /api/trigger (JSON or multipart) or Web Run now. Parameters and optional Parquet files. Not cron.</td></tr>
                         <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Agent</td><td class="py-2">Registered worker that heartbeats, joins a pool, and pulls leases.</td></tr>
                         <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Artifact</td><td class="py-2">Durable file (typically Parquet) with lineage metadata.</td></tr>
                         <tr class="border-b border-border/50"><td class="py-2 pr-4 font-medium text-foreground">Package</td><td class="py-2">querial.package/v1 file tree. Codes are identity. No secrets.</td></tr>

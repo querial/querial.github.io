@@ -37,7 +37,7 @@ const steps = [
         number: "04",
         title: "Run",
         description:
-            "Schedules create runs. Registered agents pull leases. Execution happens on the target database. Cron never assigns work; Querial does.",
+            "Schedules create runs. API keys and Web Run now can pass parameters and Parquet files. Registered agents pull leases. Execution happens on the target database. Cron never assigns work; Querial does.",
         color: "text-querial-indigo-on-dark",
         borderColor: "border-querial-indigo/30",
         bgColor: "bg-querial-indigo/10",

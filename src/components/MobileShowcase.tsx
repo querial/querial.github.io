@@ -124,7 +124,7 @@ export function ProductShowcase() {
                         <img
                             src={srcOf(screenshots[prev])}
                             alt={screenshots[prev].alt}
-                            className="w-48 md:w-56 rounded-xl shadow-xl border border-border/30 opacity-60 hover:opacity-80 transition-opacity bg-white dark:bg-zinc-900"
+                            className="w-48 md:w-56 rounded-xl shadow-xl border border-border/30 opacity-60 hover:opacity-80 transition-opacity bg-white dark:bg-black"
                         />
                         <p className="mt-3 font-semibold text-xs text-muted-foreground">{screenshots[prev].caption}</p>
                     </motion.div>
@@ -143,7 +143,7 @@ export function ProductShowcase() {
                                     key={`${currentIndex}-${isDark}`}
                                     src={srcOf(screenshots[currentIndex])}
                                     alt={screenshots[currentIndex].alt}
-                                    className="w-72 md:w-[28rem] rounded-2xl shadow-2xl shadow-querial-indigo/20 border border-border/30 cursor-pointer bg-white dark:bg-zinc-900"
+                                    className="w-72 md:w-[28rem] rounded-2xl shadow-2xl shadow-querial-indigo/20 border border-border/30 cursor-pointer bg-white dark:bg-black"
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.95 }}
@@ -169,7 +169,7 @@ export function ProductShowcase() {
                         <img
                             src={srcOf(screenshots[next])}
                             alt={screenshots[next].alt}
-                            className="w-48 md:w-56 rounded-xl shadow-xl border border-border/30 opacity-60 hover:opacity-80 transition-opacity bg-white dark:bg-zinc-900"
+                            className="w-48 md:w-56 rounded-xl shadow-xl border border-border/30 opacity-60 hover:opacity-80 transition-opacity bg-white dark:bg-black"
                         />
                         <p className="mt-3 font-semibold text-xs text-muted-foreground">{screenshots[next].caption}</p>
                     </motion.div>

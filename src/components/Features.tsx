@@ -6,6 +6,8 @@ import {
   CalendarClock,
   Bot,
   Package,
+  Upload,
+  Sparkles,
 } from "lucide-react";
 
 const features = [
@@ -47,10 +49,26 @@ const features = [
     gradient: "from-querial-indigo-on-dark to-querial-indigo",
   },
   {
+    icon: Upload,
+    title: "Ingest files; trigger by API",
+    description:
+      "An external-parquet root starts a DAG from a file you already have. POST /api/trigger accepts parameters and multipart Parquet. Schedules cannot attach files. Project- or deployment-scoped keys, hashed at rest.",
+    spec: "JSON or multipart",
+    gradient: "from-querial-sky to-querial-indigo",
+  },
+  {
+    icon: Sparkles,
+    title: "SQL Assist, grounded in schema",
+    description:
+      "Generate dialect SQL against a schema source — not the runtime endpoint. Send drafts; humans review and publish. Embeddings live on PostgreSQL 18 with pgvector. Secrets never enter prompts.",
+    spec: "Draft only",
+    gradient: "from-querial-indigo to-querial-indigo-on-dark",
+  },
+  {
     icon: Package,
     title: "Packages without secrets",
     description:
-      "Export YAML + SQL trees as querial.package/v1. Codes are identity. Connection stubs list name and provider only. Import remaps endpoints; ciphertext never travels in the tree.",
+      "Export YAML + SQL trees as querial.package/v1. Codes are identity. Connection and schema-source stubs list names and providers only. Import remaps endpoints; ciphertext never travels in the tree. Git is optional.",
     gradient: "from-querial-sky to-querial-indigo-on-dark",
   },
 ];

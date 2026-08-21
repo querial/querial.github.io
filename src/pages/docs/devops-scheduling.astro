@@ -18,7 +18,7 @@ import DocsLayout from "../../layouts/docs.astro";
             <h2>What the scheduler does</h2>
             <ul class="list-disc pl-5 space-y-1">
                 <li>Persists due work in the control database and recovers after process restart.</li>
-                <li>Creates runs when a schedule fires.</li>
+                <li>Creates runs when a schedule fires. Versions with <code class="text-foreground">external-parquet</code> roots cannot be scheduled — attach files via <a href="/docs/devops-trigger" class="text-link hover:underline">Trigger API or Run now</a>.</li>
                 <li>Can wait on upstream artifacts before planning downstream steps (artifact-aware scheduling).</li>
             </ul>
             <p>

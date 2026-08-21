@@ -7,87 +7,401 @@ import DocsLayout from "../../layouts/docs.astro";
         <div>
             <p class="text-xs font-semibold uppercase tracking-wider text-querial-indigo-on-dark">For Developers</p>
             <h1 class="text-3xl md:text-4xl font-bold mt-1">Packages</h1>
-        </div>
-        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
-            <p>
-                A package is a canonical file tree, not a blob of GUIDs.
-                <code class="text-foreground">querial.package.yaml</code> must contain
-                <code class="text-foreground">format: querial.package/v1</code>.
+            <p class="mt-3 text-muted-foreground max-w-3xl">
+                A package is a portable, code-based tree of one or more pipelines.
+                Codes are identity. Secrets never travel in the tree. Git is optional.
+                Import always lands as drafts in the current project.
             </p>
+        </div>
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground [&>h3]:text-foreground">
+            <h2>What a package is</h2>
+            <p>
+                The canonical form is a UTF-8 directory tree. A zip is only a transport
+                of that tree. A Git working copy <em>is</em> that tree — never zip-as-source-of-truth.
+                The root manifest must declare <code class="text-foreground">format: querial.package/v1</code>.
+                Unknown major versions are rejected. Additive fields (retry, join mode,
+                schema sources, <code class="text-foreground">external-parquet</code>)
+                did not bump the format.
+            </p>
+            <p>
+                This role authors the tree. Operators import, remap connections, and
+                (when allowed) create stubs. Publish remains Querial’s immutable version
+                gate: import never writes a published version.
+            </p>
+
+            <h2>Canonical tree</h2>
             <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>querial.package.yaml
 connections/catalog.yaml
+schema-sources/catalog.yaml   # optional; stubs only
 pipelines/
   &lt;pipeline.code&gt;/
     pipeline.yaml
-    README.md                 # optional
-    steps/*.sql
-    migrations/*.sql</code></pre>
+    README.md                 # optional operator guide
+    sql/steps/*.sql           # path as declared in pipeline.yaml
+    sql/migrations/*.sql</code></pre>
+            <p>
+                SQL file paths are whatever <code class="text-foreground">pipeline.yaml</code>
+                declares (forward slashes). Labs often use
+                <code class="text-foreground">sql/steps/</code> and
+                <code class="text-foreground">sql/migrations/</code>. An optional
+                <code class="text-foreground">schemas/</code> folder is reserved for
+                vendored JSON Schemas for editors — it is <em>not</em> the schema-source
+                catalog. Do not put <code class="text-foreground">schema-sources/catalog.yaml</code>
+                under <code class="text-foreground">schemas/</code>.
+            </p>
+            <p>
+                Optional <code class="text-foreground">x-export</code> on
+                <code class="text-foreground">pipeline.yaml</code> is provenance.
+                Import must ignore it for publish authority.
+            </p>
+
+            <h2>Root manifest</h2>
+            <p>
+                Required: <code class="text-foreground">format</code>,
+                <code class="text-foreground">code</code>,
+                <code class="text-foreground">pipelines[]</code> (at least one).
+                Package <code class="text-foreground">code</code> is a slug:
+                <code class="text-foreground">^[a-z0-9][a-z0-9_-]*$</code>. Pipeline
+                codes use underscores, not hyphens:
+                <code class="text-foreground">^[a-z0-9][a-z0-9_]*$</code>.
+            </p>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>format: querial.package/v1
+code: aw-scenario-e
+name: AdventureWorks Scenario E
+description: Parquet spine with DuckDB transforms and dual staged sinks.
+revision: duckdb-join-v1
+pipelines:
+  - code: aw_scenario_e
+    path: pipelines/aw_scenario_e</code></pre>
+            <p>
+                <code class="text-foreground">revision</code> is informational (SemVer
+                or a dated stamp). It is not Querial’s
+                <code class="text-foreground">pipeline_versions.version_number</code>.
+                <code class="text-foreground">path</code> is relative, forward slashes.
+                One zip = one package root. A combined lab zip lists several pipelines
+                in the same manifest (A through E).
+            </p>
 
             <h2>Codes are identity</h2>
             <p>
-                Import creates database GUIDs. Never put connection strings, passwords,
-                tokens, or ciphertext in the package. <code class="text-foreground">connections/catalog.yaml</code>
-                lists logical stubs: name, provider, description. Allowed providers in v1:
-                postgresql, sqlserver, mysql. If a stub is unresolved at import, materialization
-                is blocked and the connection wizard opens.
+                Import creates database GUIDs. Never put those GUIDs in the package.
+                Identity in the tree:
+            </p>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Package: <code class="text-foreground">package.code</code></li>
+                <li>Pipeline / step / migration / parameter: their <code class="text-foreground">code</code></li>
+                <li>Edges: <code class="text-foreground">from</code> and <code class="text-foreground">to</code> step codes</li>
+                <li>Logical connection: <code class="text-foreground">name</code> in <code class="text-foreground">connections/catalog.yaml</code></li>
+                <li>Schema source: <code class="text-foreground">code</code> in <code class="text-foreground">schema-sources/catalog.yaml</code>, referenced as <code class="text-foreground">schema:</code> on a step or migration</li>
+            </ul>
+
+            <h2>Connections catalog — stubs only</h2>
+            <p>
+                Never include connection strings, passwords, tokens, host/port/database
+                users, or ciphertext.
+            </p>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>connections:
+  - name: aw-source
+    provider: sqlserver
+    description: AdventureWorks source logical connection stub.
+  - name: aw-sql-dest
+    provider: sqlserver
+    description: SQL Server destination stub.
+  - name: aw-pg-dest
+    provider: postgresql
+    description: PostgreSQL destination stub.</code></pre>
+            <p>
+                Allowed providers in v1: <code class="text-foreground">postgresql</code>,
+                <code class="text-foreground">sqlserver</code>,
+                <code class="text-foreground">mysql</code>.
             </p>
             <p>
-                Creating stubs during import is an operator/admin action. Developers may
-                export and import with remap or require-existing resolutions; creating
-                unresolved endpoints is not this role.
+                Each <code class="text-foreground">pipeline.yaml</code> may list
+                allow-list names (including unused). Omitted lists are inferred from
+                step and migration <code class="text-foreground">connection:</code>
+                values. Import writes the pipeline–connection allow-list from that
+                union <em>before</em> inserting bound steps.
+            </p>
+            <p>
+                Unresolved stubs block materialization. Interactive import / Git
+                activate opens a wizard: <strong class="text-foreground">use existing</strong>
+                or <strong class="text-foreground">create</strong> (optionally with a
+                Development endpoint). API/CLI may supply an explicit
+                <strong class="text-foreground">remap</strong> map, or
+                <code class="text-foreground">require_existing</code> /
+                <code class="text-foreground">create_stubs</code>. Creating stubs is
+                an operator/admin action. Developers may export and import with remap
+                or require-existing; inventing unresolved endpoints is not this role.
             </p>
 
-            <h2>Edges, retry maps, and join mode</h2>
+            <h2>Schema sources catalog — stubs only</h2>
             <p>
-                In <code class="text-foreground">pipeline.yaml</code>, <code class="text-foreground">to</code>
-                depends on <code class="text-foreground">from</code>. Additive pipeline
-                and step <code class="text-foreground">retry</code> maps,
-                <code class="text-foreground">unsafe_for_auto_retry</code>, and
-                <code class="text-foreground">command_timeout_seconds</code> follow
-                <a href="/docs/developer-retry" class="text-link hover:underline">Step retry policies</a>
-                (omit means max attempts 1 — off). Optional step
-                <code class="text-foreground">join_mode</code> is
-                <code class="text-foreground">all</code> or
-                <code class="text-foreground">any</code>; omit means Wait all. Export
-                writes the field only when it is Wait any. There is no format v2 bump
-                for those fields. Wait any is rejected at package validate on
-                Artifact SQL, Staged Database SQL,
-                <code class="text-foreground">from_step</code>,
-                <code class="text-foreground">artifact_available</code> inbound edges,
-                and indegree below two — see
-                <a href="/docs/developer-join-mode" class="text-link hover:underline">Wait all and Wait any</a>.
+                Optional. Export writes it only when exported pipelines bind at least
+                one schema source. Stubs carry identity and include/exclude policy —
+                never fetch strings.
             </p>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>schema_sources:
+  - code: aw_sales
+    name: AdventureWorks sales
+    provider: sqlserver
+    include_mode: listed
+    include_schemas:
+      - Sales
+    exclude_schemas: []</code></pre>
+            <p>
+                <code class="text-foreground">include_mode</code> is
+                <code class="text-foreground">all_user</code> or
+                <code class="text-foreground">listed</code>. Bind with
+                <code class="text-foreground">schema: aw_sales</code> on a step or
+                migration. <code class="text-foreground">artifact-sql</code> must not
+                set <code class="text-foreground">schema:</code>. Import resolves
+                sources like connections. <code class="text-foreground">create_stubs</code>
+                cannot invent fetch secrets — missing sources block until an operator
+                creates them in the project. See
+                <a href="/docs/developer-sql-assist" class="text-link hover:underline">SQL Assist</a>.
+            </p>
+
+            <h2>pipeline.yaml</h2>
+            <p>
+                Required: <code class="text-foreground">code</code>,
+                <code class="text-foreground">name</code>,
+                <code class="text-foreground">steps</code>. Optional metadata:
+                <code class="text-foreground">description</code>,
+                <code class="text-foreground">readme</code> (relative path; default
+                <code class="text-foreground">README.md</code> when the file exists),
+                <code class="text-foreground">connections</code> allow-list,
+                <code class="text-foreground">parameters</code>,
+                <code class="text-foreground">migrations</code>,
+                <code class="text-foreground">dependencies</code>,
+                <code class="text-foreground">migration_dependencies</code>,
+                <code class="text-foreground">layouts</code>.
+            </p>
+            <h3>Pipeline-level policy</h3>
+            <ul class="list-disc pl-5 space-y-1">
+                <li><code class="text-foreground">dag_failure_policy</code>: <code class="text-foreground">fail_fast</code> (default) or <code class="text-foreground">continue_independent</code>. Deployments may override.</li>
+                <li><code class="text-foreground">retry</code> map: omit means max attempts 1 (off). See <a href="/docs/developer-retry" class="text-link hover:underline">Step retry policies</a>.</li>
+            </ul>
             <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>retry:
   max_attempts: 3
+  backoff_seconds: 5
+  backoff_multiplier: 2
+  on_abandoned: false
 
-steps:
-  - code: extract_sales_order
-    type: database-query-to-parquet
-    retry:
-      max_attempts: 3
-  - code: notify_source_ready
-    type: sql_command
-    join_mode: any</code></pre>
+dag_failure_policy: fail_fast</code></pre>
+
+            <h3>Parameters</h3>
+            <p>
+                Each parameter needs <code class="text-foreground">code</code>,
+                <code class="text-foreground">display_name</code>,
+                <code class="text-foreground">param_type</code>. Optional:
+                <code class="text-foreground">description</code>,
+                <code class="text-foreground">default_value</code>,
+                <code class="text-foreground">is_required</code>,
+                <code class="text-foreground">display_order</code>. Types used at
+                trigger: string, integer, decimal, boolean, datetime, date. Defaults
+                are not secrets; secret overlay still redacts in plan JSON.
+            </p>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>parameters:
+  - code: batch_label
+    display_name: Batch label
+    param_type: string
+    default_value: lab
+    is_required: true
+    display_order: 1</code></pre>
+
+            <h3>Steps</h3>
+            <p>
+                Required: <code class="text-foreground">code</code>,
+                <code class="text-foreground">name</code>,
+                <code class="text-foreground">type</code>,
+                <code class="text-foreground">execution_order</code>.
+                <code class="text-foreground">sql</code> is a relative path and is
+                required except for <code class="text-foreground">external-parquet</code>.
+            </p>
+            <div class="overflow-x-auto not-prose">
+                <table class="w-full text-sm">
+                    <thead><tr class="border-b border-border text-left"><th class="py-2 pr-4">type</th><th class="py-2">Role</th></tr></thead>
+                    <tbody class="text-muted-foreground">
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 text-foreground">sql_command, sql_query, stored_procedure, validation_query, database-sql</td><td class="py-2">Dialect SQL on the bound target.</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 text-foreground">database-query-to-parquet</td><td class="py-2">Extract query → Parquet. <code class="text-foreground">config.outputName</code>.</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 text-foreground">artifact-sql</td><td class="py-2">DuckDB over named inputs. No connection. No <code class="text-foreground">schema:</code>.</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 text-foreground">staged-database-sql</td><td class="py-2">Only database sink. Stages use <code class="text-foreground">from_step</code> + <code class="text-foreground">columns[]</code>.</td></tr>
+                        <tr><td class="py-2 pr-4 text-foreground">external-parquet</td><td class="py-2">Upload root. No SQL, no connection. See <a href="/docs/developer-external-parquet" class="text-link hover:underline">External Parquet ingest</a>.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>
+                Optional per step: <code class="text-foreground">connection</code>,
+                <code class="text-foreground">schema</code>,
+                <code class="text-foreground">transaction_mode</code>
+                (<code class="text-foreground">required</code> |
+                <code class="text-foreground">suppressed</code>),
+                <code class="text-foreground">failure_policy</code>
+                (<code class="text-foreground">fail_pipeline</code> |
+                <code class="text-foreground">continue</code>),
+                <code class="text-foreground">join_mode</code>
+                (<code class="text-foreground">all</code> |
+                <code class="text-foreground">any</code>; omit = Wait all),
+                <code class="text-foreground">retry</code> override,
+                <code class="text-foreground">unsafe_for_auto_retry</code>,
+                <code class="text-foreground">command_timeout_seconds</code>,
+                <code class="text-foreground">config</code> (handler JSON, no secrets).
+            </p>
+            <p>
+                Export writes <code class="text-foreground">join_mode</code> only when
+                it is Wait any. Wait any is rejected on Artifact SQL, Staged Database
+                SQL, <code class="text-foreground">from_step</code>,
+                <code class="text-foreground">artifact_available</code> inbound edges,
+                and indegree below two —
+                <a href="/docs/developer-join-mode" class="text-link hover:underline">Wait all and Wait any</a>.
+            </p>
+
+            <h3>Extract, transform, sink config</h3>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code># Extract
+type: database-query-to-parquet
+connection: aw-source
+sql: sql/steps/010_extract_sales_order.sql
+config:
+  outputName: sales_order
+
+# DuckDB transform (single or multi input)
+type: artifact-sql
+sql: sql/steps/045_transform_order_summary.sql
+config:
+  outputName: order_summary
+  inputs:
+    sales_order:
+      from_step: transform_sales_order
+    sales_line:
+      from_step: transform_sales_line
+
+# Sink — never bake artifactId / storeUri / checksum
+type: staged-database-sql
+connection: aw-pg-dest
+sql: sql/steps/100_load_order_summary_postgres.sql
+config:
+  stages:
+    order_summary:
+      from_step: transform_order_summary
+      columns:
+        - source: sales_order_id
+          name: sales_order_id
+          type: int
+          nullable: false
+  transaction:
+    mode: stage-and-execute</code></pre>
+            <p>
+                Sink SQL references <code class="text-foreground">{"{{ stage.order_summary }}"}</code>.
+                Artifact SQL references <code class="text-foreground">{"{{ input.sales_order }}"}</code>.
+            </p>
+
+            <h3>Edges</h3>
+            <p>
+                In <code class="text-foreground">dependencies</code>,
+                <code class="text-foreground">to</code> <strong class="text-foreground">depends on</strong>
+                <code class="text-foreground">from</code>. Same for
+                <code class="text-foreground">migration_dependencies</code>.
+            </p>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>dependencies:
+  - from: extract_sales_order
+    to: transform_sales_order
+    requirement: artifact_available
+  - from: load_sales_order_sqlserver
+    to: load_sales_line_sqlserver
+    requirement: required</code></pre>
+            <p>
+                Package vocabulary: <code class="text-foreground">required</code>
+                (predecessor must succeed) or <code class="text-foreground">optional</code>
+                (must complete). Import also accepts Querial’s stored values
+                <code class="text-foreground">succeeded</code>,
+                <code class="text-foreground">completed</code>,
+                <code class="text-foreground">artifact_available</code>. Default is
+                required.
+            </p>
+
+            <h3>Layouts</h3>
+            <p>
+                Designer coordinates. Optional <code class="text-foreground">group_name</code>
+                and <code class="text-foreground">color</code>. Not execution-authoritative.
+            </p>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>layouts:
+  - step: ingest_ids
+    x: 80
+    y: 80
+  - step: load_ids
+    x: 360
+    y: 80</code></pre>
+
+            <h3>Migrations</h3>
+            <p>
+                Ordered, coded SQL files. Required:
+                <code class="text-foreground">code</code>,
+                <code class="text-foreground">name</code>,
+                <code class="text-foreground">execution_order</code>,
+                <code class="text-foreground">sql</code>. Optional connection and
+                schema source. After apply, the <strong class="text-foreground">target
+                database</strong> records what ran — restoring a backup does not confuse
+                Querial. Per-pipeline <code class="text-foreground">README.md</code>
+                is UTF-8, max 512 KiB, imported into the pipeline README field.
+            </p>
 
             <h2>Where import lands</h2>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Always the <strong class="text-foreground">current project</strong>. There is no cross-project share in v1 — copy means export then import.</li>
+                <li>Always <strong class="text-foreground">drafts</strong>. You still publish in Workspace.</li>
+                <li>Does not copy ciphertext. Endpoints stay in the project’s connection store after remap or create.</li>
+            </ul>
+
+            <h2>Zip vs Git</h2>
+            <ul class="list-disc pl-5 space-y-1">
+                <li><strong class="text-foreground">Directory tree</strong> — source of truth. Validate this.</li>
+                <li><strong class="text-foreground">Zip</strong> — portable snapshot of one package root.</li>
+                <li><strong class="text-foreground">Git package-root</strong> — the working directory <em>is</em> the package (<code class="text-foreground">querial.package.yaml</code> at the root).</li>
+                <li><strong class="text-foreground">Git workspace</strong> — repo contains <code class="text-foreground">packages/&lt;package.code&gt;/…</code>. Sync/publish/activate resolve per package code; siblings are left alone. Empty trees publish into workspace layout.</li>
+            </ul>
             <p>
-                Import always materializes into the <strong class="text-foreground">current project</strong>.
-                It does not copy pipelines into another project. There is no cross-project
-                sharing in v1 — copy means export then import.
+                Mixing root and <code class="text-foreground">packages/*</code> in the
+                same repo is rejected. Core operation never requires a remote. Operators
+                configure remotes (HTTPS username + token stored in Querial — not host
+                REST APIs, not pull-request automation). Modes: disabled, local
+                read/write (host folder, no remote), external read/write, external
+                read-only, central-managed client. Agents do not need Git. Publication
+                must not become a secret dump.
+            </p>
+            <p>
+                Operators own clone/fetch/commit paths. See
+                <a href="/docs/devops-agents" class="text-link hover:underline">Agents, API keys, and Git</a>.
             </p>
 
-            <h2>Git</h2>
+            <h2>Validate, pack, unpack</h2>
             <p>
-                Packages are designed to live in ordinary Git. Publication from the product
-                is optional. Core operation never requires a remote. Operators configure
-                remotes; this role authors the tree.
+                JSON Schemas ship with the product under
+                <code class="text-foreground">schemas/querial-package/v1/</code>:
             </p>
-            <h2>AdventureWorks labs</h2>
+            <ul class="list-disc pl-5 space-y-1">
+                <li><code class="text-foreground">querial.package.schema.json</code></li>
+                <li><code class="text-foreground">querial.connections.catalog.schema.json</code></li>
+                <li><code class="text-foreground">querial.pipeline.schema.json</code></li>
+                <li><code class="text-foreground">querial.schema-sources.catalog.schema.json</code></li>
+            </ul>
             <p>
-                Ready-made <code class="text-foreground">querial.package/v1</code> zips,
-                canonical SQL, and the packing script live on the
-                <a href="/labs" class="text-link hover:underline">Labs</a> pages. Import is
-                an operator action; this role reviews the draft DAG and publishes.
+                Validation is YAML → JSON → JSON Schema, then semantic checks (SQL
+                files exist, dependency codes resolve, ingest has no SQL/connection,
+                unique <code class="text-foreground">outputName</code>, and so on).
+                A Package CLI exposes <code class="text-foreground">validate</code>,
+                <code class="text-foreground">pack</code>, and
+                <code class="text-foreground">unpack</code>. Editor YAML extensions
+                can associate those schema files with the matching filenames.
+            </p>
+
+            <h2>AdventureWorks and ingest labs</h2>
+            <p>
+                Ready-made trees, zips, canonical SQL, and the packing script live on
+                the <a href="/labs" class="text-link hover:underline">Labs</a> pages.
+                Scenario E is extract → DuckDB join/aggregate → dual staged sinks.
+                An ingest lab is <code class="text-foreground">external-parquet</code>
+                → PostgreSQL staged load and is not schedulable. Import is an operator
+                action; this role reviews the draft DAG and publishes.
             </p>
         </div>
     </div>

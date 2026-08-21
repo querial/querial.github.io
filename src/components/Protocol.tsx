@@ -20,7 +20,7 @@ const layers = [
         icon: Server,
         name: "Platform API",
         description:
-            "Separate API host. Session cookies or a project-bound API key. Mutating verbs require CSRF for cookie callers. Keys never act as Platform admin.",
+            "Separate API host. Session cookies or a project- or deployment-bound API key. Mutating verbs require CSRF for cookie callers. Keys never act as Platform admin. POST /api/trigger accepts parameters and multipart Parquet.",
         color: "text-querial-sky",
     },
     {

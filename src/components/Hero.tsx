@@ -194,7 +194,7 @@ export function Hero() {
             <div className="absolute -inset-8 bg-querial-indigo/10 dark:bg-querial-indigo/20 rounded-full blur-[80px] animate-pulse-glow" />
 
             <div className="relative">
-              <div className="overflow-hidden rounded-2xl shadow-xl shadow-querial-indigo/15 dark:shadow-querial-indigo/20 border border-querial-indigo/10 bg-white dark:bg-zinc-900">
+              <div className="overflow-hidden rounded-2xl shadow-xl shadow-querial-indigo/15 dark:shadow-querial-indigo/20 border border-querial-indigo/10 bg-white dark:bg-black">
                 <AnimatePresence mode="wait">
                   <motion.img
                     key={`${currentIndex}-${isDark}`}

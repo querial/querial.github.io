@@ -28,16 +28,21 @@ import DocsLayout from "../../layouts/docs.astro";
 
             <h2>API keys</h2>
             <p>
-                Keys live under Workers in Workspace, not in Administration. Each key is
-                bound to one project. Prefix <code class="text-foreground">qk_</code>, SHA-256
-                hash at rest, constant-time compare, shown in full once at create. Scopes:
-                trigger_run, view_status, cancel_run, with optional environment restriction.
-                Idempotency keys have a 24-hour TTL. Rate limits and an audit log (IP, action)
-                apply. A key cannot start or inspect another project's runs and cannot act
+                Keys live under Workers in Workspace, not in Administration. Prefix
+                <code class="text-foreground">qk_</code>, SHA-256 hash at rest, constant-time
+                compare, shown in full once at create. Two kinds: project-scoped (any
+                deployment in that project) and deployment-scoped (one deployment;
+                mismatch is 404). Scopes: trigger_run, view_status, cancel_run, with
+                optional environment restriction. Idempotency keys have a 24-hour TTL.
+                A project setting can disable use of project-scoped keys without deleting
+                them. A key cannot start or inspect another project's runs and cannot act
                 as Platform admin.
             </p>
             <p>
                 External trigger, status, and cancel use API-key auth, not a user session.
+                JSON and multipart bodies, the trigger-contract, and Web Run now share
+                one merge rule —
+                <a href="/docs/devops-trigger" class="text-link hover:underline">Trigger API and Run now</a>.
                 Developers cannot trigger Production via a key any more than they can in the UI.
             </p>
 

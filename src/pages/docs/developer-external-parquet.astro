@@ -1,0 +1,132 @@
+---
+import DocsLayout from "../../layouts/docs.astro";
+---
+
+<DocsLayout title="External Parquet ingest — Querial">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-indigo-on-dark">For Developers</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">External Parquet ingest</h1>
+        </div>
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground [&>h3]:text-foreground">
+            <p>
+                Some pipelines should start from a Parquet file the caller already has —
+                a nightly drop, a partner extract, a test fixture — not from a database
+                query. The <code class="text-foreground">external-parquet</code> step is
+                that root. It produces a Parquet artifact. It has no SQL body and no
+                logical connection. Downstream Artifact SQL or Staged Database SQL bind
+                with <code class="text-foreground">from_step</code> the same way they
+                bind an extract.
+            </p>
+
+            <h2>What the step is</h2>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>A <strong class="text-foreground">structural root</strong>: publish requires indegree 0. You cannot hang it under another step.</li>
+                <li>A Parquet <strong class="text-foreground">producer</strong>. It does not consume artifacts.</li>
+                <li>Required unique <code class="text-foreground">outputName</code> (no file extension) among producers in the pipeline.</li>
+                <li>Optional <code class="text-foreground">expectedSchema</code> — a fingerprint / column contract. Mismatch fails <em>before</em> a run is created.</li>
+                <li>Optional <code class="text-foreground">retentionDays</code> (1–3650). Omit uses the artifact store default (30). Expired objects cannot be reused on a failed-cone.</li>
+            </ul>
+            <p>
+                Multiple ingest roots are allowed (a forest), same as multiple extracts.
+                Each <code class="text-foreground">outputName</code> needs its own file
+                at trigger time. Extra files are rejected.
+            </p>
+
+            <h2>How a run is seeded</h2>
+            <p>
+                The file is not fetched by an agent. The control plane validates the
+                upload (size, Parquet footer, optional schema), creates the run and DAG
+                plan, writes the bytes into the artifact store, and marks those ingest
+                executions <strong class="text-foreground">succeeded</strong> before
+                readiness evaluation. Downstream <code class="text-foreground">from_step</code>
+                still means <em>same run</em>. If an agent ever leases an ingest step
+                that was not seeded, the handler fails closed — it does not invent an
+                empty file.
+            </p>
+            <p>
+                JSON-only trigger of a version that has ingest steps is rejected. Use
+                multipart (API) or the Run now modal (Web). Limits default to 100 MiB
+                per file and 256 MiB per request. Files are never JSON-base64.
+            </p>
+
+            <h2>Not schedulable</h2>
+            <p>
+                Cron cannot attach a file. Create and enable of a schedule targeting an
+                ingest version are refused. If a leftover schedule fires anyway, the run
+                is inserted as Failed with a stable message — no empty artifact. Use
+                <a href="/docs/devops-trigger" class="text-link hover:underline">API trigger</a>
+                or Web Run now.
+            </p>
+
+            <h2>Package shape</h2>
+            <p>
+                Additive on <code class="text-foreground">querial.package/v1</code>. No
+                <code class="text-foreground">connection:</code>, no <code class="text-foreground">sql:</code>
+                file. Runtime identities (<code class="text-foreground">artifactId</code>,
+                store URI, checksum) are forbidden in the tree.
+            </p>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>steps:
+  - code: ingest_ids
+    name: Upload ids Parquet
+    type: external-parquet
+    execution_order: 10
+    config:
+      outputName: ids
+      retentionDays: 30
+  - code: load_ids
+    name: Load ids
+    type: staged-database-sql
+    execution_order: 20
+    connection: ingest-pg-dest
+    sql: sql/steps/020_load_ids.sql
+    config:
+      stages:
+        ids:
+          from_step: ingest_ids
+          columns:
+            - source: id
+              name: id
+              type: int
+              nullable: false
+
+dependencies:
+  - from: ingest_ids
+    to: load_ids
+    requirement: artifact_available</code></pre>
+            <p>
+                Sink SQL uses <code class="text-foreground">{"{{ stage.ids }}"}</code>,
+                never a physical staging name. A ready-made lab package (fixture
+                <code class="text-foreground">tiny-ids.parquet</code>) follows this
+                shape — import is an operator action; this role reviews the draft DAG
+                and publishes.
+            </p>
+
+            <h2>Retry and failed-cone</h2>
+            <p>
+                Seeded ingest artifacts default <em>safe</em> for auto-retry (same as
+                extract / Artifact SQL). Failed-cone recovery <strong class="text-foreground">reuses</strong>
+                live ingest objects (same store URI and expiry). If the object is gone
+                or expired, cone is refused — the operator must full-retry
+                <em>with files</em>. Re-executing an ingest node always requires a new
+                upload. See
+                <a href="/docs/developer-retry" class="text-link hover:underline">Step retry policies</a>
+                and
+                <a href="/docs/devops-retry" class="text-link hover:underline">Retry and failed-cone recovery</a>.
+            </p>
+
+            <h2>Designer notes</h2>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>The node has no SQL editor and no connection picker. Drop onto a connection group is invalid.</li>
+                <li>Wait any is disabled on ingest (it is a data producer, not a control gate).</li>
+                <li>Requires DAG execution and artifacts flags. Legacy serial execution must not run this type.</li>
+            </ul>
+            <p>
+                Trigger-time parameters still apply. Uploading a file does not skip
+                parameter validation. Merge is trigger overlay, then deployment override,
+                then pipeline default —
+                <a href="/docs/devops-trigger" class="text-link hover:underline">Trigger API and Run now</a>.
+            </p>
+        </div>
+    </div>
+</DocsLayout>

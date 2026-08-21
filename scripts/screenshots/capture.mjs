@@ -46,8 +46,23 @@ function chrome(active, inner, extraCss = "") {
       position: relative;
     }
     [data-bs-theme="dark"] .dag-canvas {
-      background: radial-gradient(circle, #3f3f46 1px, transparent 1px) 0 0 / 18px 18px;
-      background-color: #18181b;
+      background: radial-gradient(circle, #333 1px, transparent 1px) 0 0 / 18px 18px;
+      background-color: #000;
+    }
+    body[data-bs-theme="dark"],
+    [data-bs-theme="dark"] {
+      --tblr-body-bg: #000000 !important;
+      --tblr-bg-surface: #0a0a0a !important;
+      --tblr-bg-surface-secondary: #111111 !important;
+    }
+    body[data-bs-theme="dark"] .page,
+    body[data-bs-theme="dark"] .page-wrapper,
+    body[data-bs-theme="dark"] .page-body,
+    body[data-bs-theme="dark"] aside.navbar,
+    body[data-bs-theme="dark"] .navbar-vertical,
+    body[data-bs-theme="dark"] .sidebar-header {
+      background: #000 !important;
+      background-color: #000 !important;
     }
     .dag-node {
       position: absolute; width: 200px; padding: 0.75rem 0.9rem;

@@ -13,7 +13,7 @@ const personas = [
         title: "Developer",
         layer: "Project role",
         description:
-            "Author drafts, DAG edges, steps, and migrations. Use the SQL workspace and schema cache against Development. SqlAssist may draft; it never publishes. Packages export SQL without secrets. Interactive SQL on Staging or Production is not this role.",
+            "Author drafts, DAG edges, steps, and migrations. Use the SQL workspace and SQL Assist against a schema source; Run is Development only. Assist drafts; it never publishes. Packages export SQL without secrets. External-parquet roots are designed here; operators trigger them with files.",
         example: "Workspace → Pipelines → DAG designer → SQL workspace",
         gradient: "from-querial-indigo to-querial-indigo-on-dark",
     },
@@ -22,7 +22,7 @@ const personas = [
         title: "DevOps",
         layer: "Project role",
         description:
-            "Operate: connections, deployments, schedules, agents, Git remotes, API keys, and runs. SQL preview may target any environment kind. Promote to Staging. Production promote and approval are not this role. Retry and failed-cone recovery are.",
+            "Operate: connections, deployments, schedules, agents, Git remotes, API keys, and runs. Trigger via JSON or multipart Parquet. SQL preview may target any environment kind. Promote to Staging. Production promote and approval are not this role. Retry and failed-cone recovery are.",
         example: "Deploy → Schedule → Agents pull leases → Retry cone",
         gradient: "from-querial-sky to-querial-indigo",
     },

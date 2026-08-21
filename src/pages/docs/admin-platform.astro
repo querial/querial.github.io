@@ -48,10 +48,13 @@ import DocsLayout from "../../layouts/docs.astro";
 
             <h2>AI configuration</h2>
             <p>
-                Instance AI settings live in Administration. SqlAssist remains draft-only
-                regardless of provider. Embeddings live on PostgreSQL 18 with pgvector.
+                Instance AI settings live in Administration: chat LLM, SQL-generation LLM,
+                and embeddings. SQL Assist remains draft-only regardless of provider.
+                Embeddings live on PostgreSQL 18 with pgvector (fixed dimension; mismatch
+                fails closed). Schema-source fetch strings are never used to execute SQL.
                 Structured logging and OpenTelemetry must never include full connection
-                strings or decrypted secrets.
+                strings or decrypted secrets. Developer walkthrough:
+                <a href="/docs/developer-sql-assist" class="text-link hover:underline">SQL Assist</a>.
             </p>
 
             <h2>Break-glass</h2>

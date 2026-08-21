@@ -52,6 +52,21 @@ const faqs = [
     answer:
       "No. Packages can live in Git, and optional remotes can publish diffs, but core operation never requires a remote. Messaging is also optional and never carries large tabular payloads.",
   },
+  {
+    question: "Can a pipeline start from a Parquet file I already have?",
+    answer:
+      "Yes. An external-parquet step is a structural root with no SQL and no connection. You upload parquet.{outputName} on POST /api/trigger (multipart) or Web Run now. JSON-only trigger of an ingest version is 400. Cron cannot attach a file — those versions are not schedulable.",
+  },
+  {
+    question: "How do I trigger a run from another system?",
+    answer:
+      "Mint a project- or deployment-scoped API key (qk_…). GET the trigger-contract, then POST /api/trigger with JSON parameters and, when needed, multipart Parquet parts. Idempotency is per project, deployment, and key for 24 hours. Assignment and pool JSON are not accepted.",
+  },
+  {
+    question: "Does SQL Assist publish pipelines?",
+    answer:
+      "No. Send generates draft SQL against a schema source. Humans review, edit, and publish. Run uses a logical connection × environment, never the schema-source fetch string. Developers can execute Development only.",
+  },
 ];
 
 export function FAQ() {

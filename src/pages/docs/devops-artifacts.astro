@@ -25,7 +25,7 @@ import DocsLayout from "../../layouts/docs.astro";
 
             <h2>Produce → transform → consume</h2>
             <ol class="list-decimal pl-5 space-y-2">
-                <li><strong class="text-foreground">Produce</strong> — DatabaseQueryToParquet (or similar) runs SQL on a source connection and writes a file. Metadata records run, step, and location.</li>
+                <li><strong class="text-foreground">Produce</strong> — DatabaseQueryToParquet runs SQL on a source connection and writes a file, <em>or</em> an <code class="text-foreground">external-parquet</code> root is seeded from an upload at trigger time. Metadata records run, step, and location. <a href="/docs/developer-external-parquet" class="text-link hover:underline">External Parquet ingest</a>.</li>
                 <li><strong class="text-foreground">Transform</strong> — an eligible agent runs DuckDB SQL against one or more Parquet inputs and writes a new artifact.</li>
                 <li><strong class="text-foreground">Consume</strong> — Staged Database SQL creates staging tables, bulk-loads with provider-native APIs, then runs developer-authored SQL that joins stages using logical symbols. There is no ArtifactToTable mapping; configuration that implies one-to-one automatic table copy is rejected.</li>
             </ol>

@@ -1,0 +1,113 @@
+---
+import DocsLayout from "../../layouts/docs.astro";
+---
+
+<DocsLayout title="SQL Assist — Querial">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-indigo-on-dark">For Developers</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">SQL Assist</h1>
+        </div>
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground [&>h3]:text-foreground">
+            <p>
+                SQL Assist is a workspace that generates dialect SQL against a
+                <strong class="text-foreground">schema source</strong> — a named,
+                design-time catalog — using the instance LLM and embeddings
+                configuration. It never auto-publishes. A human reviews, edits, and
+                publishes. It is not free chat: <strong class="text-foreground">Send
+                generates SQL</strong> from the selected source.
+            </p>
+
+            <h2>Schema source vs connection</h2>
+            <p>
+                A schema source is not a pipeline connection. It has one fetch secret
+                and <em>no</em> environment kind. Include/exclude of SQL schemas is
+                applied at fetch time, so Assist only sees in-scope objects. System
+                schemas are always excluded. Cache, completion, and vector retrieval
+                key off the schema source, not the runtime endpoint.
+            </p>
+            <p>
+                <strong class="text-foreground">Run</strong> (from a SQL fence) uses a
+                <strong class="text-foreground">logical connection × environment</strong>.
+                Assist never executes SQL on the schema-source fetch string. Developers
+                can run Development only. Operators may pick Staging or Production.
+                If Send works but Run asks for a connection, pick a logical connection —
+                that is expected.
+            </p>
+            <p>
+                Binding a schema source on a draft step or migration is optional for
+                publish. Execution must not depend on the cache being current. When
+                both Connection and Schema are set, providers must match.
+                <code class="text-foreground">artifact-sql</code> has no Schema control
+                (DuckDB).
+            </p>
+
+            <h2>Who may refresh and index</h2>
+            <p>
+                This role lists enabled sources, browses the cache, and binds them.
+                <strong class="text-foreground">Refresh, re-index, and cache delete
+                are operator actions</strong> (DevOps / Project admin), on Schema
+                Browser — not on the Assist page. Re-index rebuilds DBML and pgvector
+                embeddings object by object. Platform Embedding config is required
+                (the Default LLM is never used as an embedding fallback). A dimension
+                mismatch against the control-database vector column fails closed.
+            </p>
+
+            <h2>The Assist workspace</h2>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Full-canvas chat (left sidebar stays; no application top bar).</li>
+                <li>Sessions stick to the schema source used when the conversation started.</li>
+                <li>New session clears the canvas; a database row is created on first send.</li>
+                <li>Replies stream. Stop cancels generation.</li>
+                <li>User messages: Ask again / Copy / Delete. Assistant: Sources / Fullscreen / Copy markdown / Download / Delete.</li>
+                <li>SQL fences: Copy, Run, Excel, Open in editor, fullscreen, plus Explain / Fix / Optimize for that fence. Fix uses the last run error, or asks for the error text.</li>
+            </ul>
+            <p>
+                Run and Excel stay disabled until both a schema source and a connection
+                are selected. The results modal shows at most 100 rows and can be
+                stopped. Excel re-executes on the server (up to 50,000 rows; over that
+                the export fails closed).
+            </p>
+
+            <h2>SQL Editor drawer</h2>
+            <p>
+                The SQL Editor has its own assistant drawer over Monaco — same sessions
+                and generation. <strong class="text-foreground">Apply to editor</strong>
+                writes a SQL fence into the buffer. It is not a second copy of the
+                Assist page. Fence Run / Excel still use the connection × environment
+                already selected on the editor toolbar.
+            </p>
+
+            <h2>Generate SQL in the DAG</h2>
+            <p>
+                Step and migration modals have <strong class="text-foreground">Generate
+                SQL</strong>. That uses the step’s bound schema source (Artifact SQL
+                does not bind one) and inserts a <strong class="text-foreground">draft</strong>
+                into Monaco. It does not auto-save and does not publish. Physical
+                staging names (<code class="text-foreground">_querial_stg_*</code>)
+                never survive into the inserted text. For artifact sinks, assistance
+                must emit logical tokens:
+            </p>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>{"{{ input.orders }}"}     -- Artifact SQL named input
+{"{{ stage.sales_order }}"} -- Staged Database SQL stage</code></pre>
+            <p>
+                Review the draft, bind Connection, then save. Pipeline execution still
+                uses the published version — never the chat history.
+            </p>
+
+            <h2>Secrets and prompts</h2>
+            <p>
+                Fetch strings, connection secrets, and API keys never appear in prompts,
+                logs, or vector payloads. Embeddings and chat history live on the
+                control database (PostgreSQL 18 with pgvector). Platform admin owns
+                LLM and embedding configuration; this role does not.
+            </p>
+            <p>
+                Interactive SQL environment rules:
+                <a href="/docs/developer-sql" class="text-link hover:underline">SQL workspace, steps, and migrations</a>.
+                Schema source stubs in packages:
+                <a href="/docs/developer-packages" class="text-link hover:underline">Packages</a>.
+            </p>
+        </div>
+    </div>
+</DocsLayout>
