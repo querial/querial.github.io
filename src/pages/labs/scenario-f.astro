@@ -1,0 +1,127 @@
+---
+import LabsLayout from "../../layouts/labs.astro";
+---
+
+<LabsLayout title="Scenario F — External Parquet ingest — Querial Labs" active="f">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-indigo-on-dark">Scenario F</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">External Parquet ingest</h1>
+            <p class="text-muted-foreground mt-3">
+                Upload a tiny Parquet file at <strong class="text-foreground">trigger</strong>
+                time. Querial seeds it as the <code class="text-foreground">ids</code>
+                artifact, then Staged Database SQL upserts PostgreSQL
+                <code class="text-foreground">ingest.ids</code>. This scenario does
+                <strong class="text-foreground">not</strong> read AdventureWorks and
+                <strong class="text-foreground">must not be scheduled</strong>.
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="/labs/adventureworks/downloads/scenario-f-ingest.zip" download
+               class="inline-flex items-center rounded-lg bg-querial-indigo px-4 py-2 text-sm font-medium text-white hover:opacity-90">
+                Download scenario-f-ingest.zip
+            </a>
+            <a href="/labs/adventureworks/source/fixtures/tiny-ids.parquet" download
+               class="inline-flex items-center rounded-lg border border-border/60 px-4 py-2 text-sm font-medium hover:bg-muted/50">
+                Download tiny-ids.parquet
+            </a>
+            <a href="/labs/run-through" class="inline-flex items-center rounded-lg border border-border/60 px-4 py-2 text-sm font-medium hover:bg-muted/50">
+                Load and test
+            </a>
+            <a href="/docs/developer-external-parquet" class="inline-flex items-center rounded-lg border border-border/60 px-4 py-2 text-sm font-medium hover:bg-muted/50">
+                External Parquet docs
+            </a>
+            <a href="/docs/developer-handler-contracts" class="inline-flex items-center rounded-lg border border-border/60 px-4 py-2 text-sm font-medium hover:bg-muted/50">
+                Handler contracts
+            </a>
+        </div>
+
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground">
+            <h2>Package</h2>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Package <code class="text-foreground">aw-scenario-f</code>, pipeline <code class="text-foreground">aw_scenario_f</code>.</li>
+                <li>Stub: <code class="text-foreground">aw-pg-dest</code> only (same warehouse as B–E).</li>
+                <li>Typed parameter <code class="text-foreground">batch_label</code> (string, required, default <code class="text-foreground">lab</code>). The sink table does not store it; it exists so Run now shows a field next to the file.</li>
+            </ul>
+
+            <h2>Topology</h2>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>ingest_ids  (ROOT, external-parquet, outputName: ids)
+  └─(artifact_available)→ load_ids  (staged-database-sql → aw-pg-dest)</code></pre>
+            <p>
+                The ingest node has no SQL and no connection. The control plane seeds
+                the file before readiness. Downstream
+                <code class="text-foreground">from_step</code> still means
+                <em>same run</em>.
+            </p>
+
+            <h2>Migrations (aw-pg-dest)</h2>
+            <ol class="list-decimal pl-5 space-y-1">
+                <li><code class="text-foreground">ingest_001_create_schema</code> — <code class="text-foreground">CREATE SCHEMA ingest</code></li>
+                <li><code class="text-foreground">ingest_002_create_ids</code> — <code class="text-foreground">ingest.ids</code> (<code class="text-foreground">id</code> PK)</li>
+            </ol>
+            <p>Use deployment <code class="text-foreground">before_run</code> on first pass.</p>
+
+            <h2>Steps and config</h2>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>config:
+  outputName: ids
+  retentionDays: 30
+
+config:
+  stages:
+    - from_step: ingest_ids
+      columns:
+        - source: id
+          name: id
+          type: int
+          nullable: false
+  transaction:
+    mode: stage-and-execute</code></pre>
+            <p>
+                Package YAML is a <strong class="text-foreground">list</strong>, not a
+                map keyed by alias. Sink SQL uses the bare token because this step has
+                one inbound file:
+            </p>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>INSERT INTO ingest.ids (id, loaded_at_utc)
+SELECT s.id, (now() AT TIME ZONE 'utc')
+FROM {"{{ stage }}"} AS s
+ON CONFLICT (id) DO UPDATE SET loaded_at_utc = EXCLUDED.loaded_at_utc;</code></pre>
+            <p>
+                Designer: draw the artifact edge; Fill columns from a sample upload or
+                the last ingest artifact — never FMTONLY on the sink.
+                <a href="/docs/developer-handler-contracts" class="text-link hover:underline">Step handler contracts</a>.
+            </p>
+
+            <h2>Fixture</h2>
+            <p>
+                Multipart field name: <code class="text-foreground">parquet.ids</code>
+                (prefix plus the producer <code class="text-foreground">outputName</code>).
+                Canonical file: <code class="text-foreground">fixtures/tiny-ids.parquet</code>
+                (three-row <code class="text-foreground">id</code> column). The zip also
+                ships it under the package tree.
+            </p>
+
+            <h2>Flags</h2>
+            <ul class="list-disc pl-5 space-y-1">
+                <li><code class="text-foreground">Querial:Extensions:Artifacts=true</code></li>
+                <li><code class="text-foreground">Querial:Extensions:DagExecution=true</code></li>
+            </ul>
+            <p>
+                DuckDB is not required for F (no extract/transform). Legacy serial
+                execution must not run <code class="text-foreground">external-parquet</code>.
+            </p>
+
+            <h2>Walkthrough extras</h2>
+            <ol class="list-decimal pl-5 space-y-2">
+                <li>Import the zip. Resolve <code class="text-foreground">aw-pg-dest</code> only.</li>
+                <li>Designer: ingest node has no connection badge and no SQL editor. One inbound artifact edge on the sink. Column overlay is the contract UI.</li>
+                <li>Publish: one root. Do <strong class="text-foreground">not</strong> create a schedule — create/enable is refused; a leftover fire fails closed.</li>
+                <li>Run now: set <code class="text-foreground">batch_label</code>, attach the fixture as <code class="text-foreground">parquet.ids</code>. JSON-only trigger is 400. See <a href="/docs/devops-trigger" class="text-link hover:underline">Trigger API and Run now</a>.</li>
+                <li>Run Graph: ingest is already Succeeded (seeded). Load stages and upserts. Artifact details show expiry.</li>
+            </ol>
+
+            <h2>Verify</h2>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>SELECT id, loaded_at_utc FROM ingest.ids ORDER BY id;</code></pre>
+            <p>Expect three ids from the fixture. Re-run with the same file is an upsert on <code class="text-foreground">id</code>.</p>
+        </div>
+    </div>
+</LabsLayout>

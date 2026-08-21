@@ -26,6 +26,9 @@ import LabsLayout from "../../layouts/labs.astro";
             <a href="/docs/devops-artifacts" class="inline-flex items-center rounded-lg border border-border/60 px-4 py-2 text-sm font-medium hover:bg-muted/50">
                 Artifacts docs
             </a>
+            <a href="/docs/developer-handler-contracts" class="inline-flex items-center rounded-lg border border-border/60 px-4 py-2 text-sm font-medium hover:bg-muted/50">
+                Handler contracts
+            </a>
             <a href="/docs/developer-join-mode" class="inline-flex items-center rounded-lg border border-border/60 px-4 py-2 text-sm font-medium hover:bg-muted/50">
                 Wait all / Wait any
             </a>
@@ -35,7 +38,7 @@ import LabsLayout from "../../layouts/labs.astro";
             <h2>What Artifact SQL is for</h2>
             <ul class="list-disc pl-5 space-y-1">
                 <li>Read one or more Parquet artifacts from earlier steps in the <strong class="text-foreground">same run</strong>.</li>
-                <li>Author ordinary SQL. DuckDB registers each input as <code class="text-foreground">{"{{ input.name }}"}</code>.</li>
+                <li>Author ordinary SQL. DuckDB registers one inbound file as <code class="text-foreground">{"{{ input }}"}</code>, or several as <code class="text-foreground">{"{{ input.outputName }}"}</code>.</li>
                 <li>Write a new Parquet (<code class="text-foreground">config.outputName</code>). Downstream staged sinks consume that file.</li>
                 <li>No logical connection, no schema source, no secrets. <code class="text-foreground">from_step</code> must point at a Succeeded producer.</li>
             </ul>
@@ -67,7 +70,8 @@ import LabsLayout from "../../layouts/labs.astro";
             <p>
                 <code class="text-foreground">transform_sales_order</code> /
                 <code class="text-foreground">transform_sales_line</code> each have one
-                <code class="text-foreground">config.inputs</code> entry. SQL uses
+                list <code class="text-foreground">inputs</code> row. SQL uses
+                <code class="text-foreground">{"{{ input }}"}</code> plus
                 <code class="text-foreground">CAST(...)</code> and a filter so the join
                 consumes typed Parquet, not the raw extract.
             </p>
@@ -78,10 +82,8 @@ import LabsLayout from "../../layouts/labs.astro";
             <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>config:
   outputName: order_summary
   inputs:
-    sales_order:
-      from_step: transform_sales_order
-    sales_line:
-      from_step: transform_sales_line</code></pre>
+    - from_step: transform_sales_order
+    - from_step: transform_sales_line</code></pre>
             <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>SELECT
     o.sales_order_id,
     o.customer_id,
@@ -90,8 +92,8 @@ import LabsLayout from "../../layouts/labs.astro";
     SUM(l.order_qty) AS total_qty,
     SUM(l.line_total) AS computed_line_total,
     o.total_due AS header_total_due
-FROM {"{{ input.sales_order }}"} AS o
-INNER JOIN {"{{ input.sales_line }}"} AS l
+FROM {"{{ input.sales_order_transformed }}"} AS o
+INNER JOIN {"{{ input.sales_line_transformed }}"} AS l
     ON o.sales_order_id = l.sales_order_id
 GROUP BY
     o.sales_order_id,
@@ -99,9 +101,12 @@ GROUP BY
     CAST(o.order_date AS DATE),
     o.total_due;</code></pre>
             <p>
-                Input names in SQL must match the <code class="text-foreground">config.inputs</code> keys.
-                The staged loads bind <code class="text-foreground">from_step: transform_order_summary</code>
-                and upsert <code class="text-foreground">aw.sales_order_summary</code>.
+                Qualifiers are the producer <code class="text-foreground">outputName</code>
+                values, frozen when the edge is saved — not YAML map keys. Single-input
+                CAST steps use the bare token <code class="text-foreground">{"{{ input }}"}</code>.
+                Staged loads bind <code class="text-foreground">from_step: transform_order_summary</code>
+                as a list row and upsert <code class="text-foreground">aw.sales_order_summary</code>.
+                <a href="/docs/developer-handler-contracts" class="text-link hover:underline">Handler contracts</a>.
             </p>
 
             <h2>Migrations (E-only summary table)</h2>

@@ -2,7 +2,7 @@
 -- Pipeline step code: transform_order_summary
 -- Step type: artifact-sql (no database connection)
 -- Depends on: transform_sales_order, transform_sales_line (artifact_available)
--- Input names: sales_order, sales_line
+-- Input names: producer outputNames sales_order_transformed, sales_line_transformed
 --
 -- This is the Artifact SQL teaching step: two from_step inputs, an INNER JOIN,
 -- GROUP BY, and a new Parquet output. Sinks load aw.sales_order_summary.
@@ -15,8 +15,8 @@ SELECT
     SUM(l.order_qty) AS total_qty,
     SUM(l.line_total) AS computed_line_total,
     o.total_due AS header_total_due
-FROM {{ input.sales_order }} AS o
-INNER JOIN {{ input.sales_line }} AS l
+FROM {{ input.sales_order_transformed }} AS o
+INNER JOIN {{ input.sales_line_transformed }} AS l
     ON o.sales_order_id = l.sales_order_id
 GROUP BY
     o.sales_order_id,

@@ -37,15 +37,18 @@ import LabsLayout from "../../layouts/labs.astro";
   build-packages.ps1
   verify-connections.ps1
   README.md
+  fixtures/
+    tiny-ids.parquet          # Scenario F trigger file (parquet.ids)
   migrations/
-    sqlserver/     001_create_schema.sql … 005_create_sales.sql
-    postgres/      same codes, dialect SQL
+    sqlserver/     001_create_schema.sql … 006_create_sales_summary.sql
+    postgres/      same codes, plus 007/008 ingest schema for F
   steps/
     A-sqlserver-only/
     B-postgres-only/
     C-both/
     D-fanout/
-    E-artifacts/</code></pre>
+    E-artifacts/
+    F-ingest/</code></pre>
             <p>
                 Keep this folder together. The script copies SQL using paths relative to
                 itself. Do not run it from a folder that only contains the <code class="text-foreground">.ps1</code>.
@@ -59,6 +62,7 @@ import LabsLayout from "../../layouts/labs.astro";
   scenario-c-both/
   scenario-d-fanout/
   scenario-e-artifacts/
+  scenario-f-ingest/
   aw-lab-all/                    # with -Combined
   aw-lab-all.zip</code></pre>
             <p>
@@ -71,7 +75,7 @@ import LabsLayout from "../../layouts/labs.astro";
 
             <h2>Parameters</h2>
             <ul class="list-disc pl-5 space-y-2">
-                <li><code class="text-foreground">-Scenarios A,B,C,D,E</code> — subset to build. Default is all five. Comma-separated or multiple args. Unknown letters throw.</li>
+                <li><code class="text-foreground">-Scenarios A,B,C,D,E,F</code> — subset to build. Default is all six. Comma-separated or multiple args. Unknown letters throw.</li>
                 <li><code class="text-foreground">-Zip</code> — write a zip next to each tree. Prefer this for Workspace import (the modal expects a zip, 64&nbsp;MB max).</li>
                 <li><code class="text-foreground">-Validate</code> — after each tree, run the Package CLI if <code class="text-foreground">QUERIAL_PACKAGE_CLI</code> points at a <code class="text-foreground">.csproj</code>; otherwise a structural check (manifest, catalog names, referenced SQL files exist).</li>
                 <li><code class="text-foreground">-Combined</code> — also emit <code class="text-foreground">aw-lab-all</code> with every selected pipeline and a union catalog. Connection name clashes with different providers fail closed.</li>
@@ -81,7 +85,7 @@ import LabsLayout from "../../layouts/labs.astro";
             <h2>Commands</h2>
             <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>cd path\to\adventureworks-source
 
-# All five trees
+# All six trees
 .\build-packages.ps1
 
 # Trees + zips + structural (or Package CLI) validation
@@ -140,13 +144,30 @@ import LabsLayout from "../../layouts/labs.astro";
             </p>
             <ul class="list-disc pl-5 space-y-1">
                 <li>Single-input CAST/filter: <code class="text-foreground">transform_sales_order</code>, <code class="text-foreground">transform_sales_line</code>.</li>
-                <li>Two-input JOIN + GROUP BY: <code class="text-foreground">transform_order_summary</code> with <code class="text-foreground">config.inputs.sales_order</code> and <code class="text-foreground">config.inputs.sales_line</code>, both <code class="text-foreground">from_step</code> of the CAST transforms.</li>
+                <li>Two-input JOIN + GROUP BY: <code class="text-foreground">transform_order_summary</code> with a list of two <code class="text-foreground">from_step</code> rows (the CAST transforms). SQL uses <code class="text-foreground">{"{{ input.sales_order_transformed }}"}</code> and <code class="text-foreground">{"{{ input.sales_line_transformed }}"}</code> — producer output names, not YAML map keys.</li>
             </ul>
             <p>
                 Canonical SQL lives in <code class="text-foreground">steps/E-artifacts/</code>
                 (including <code class="text-foreground">045_transform_order_summary.sql</code>)
                 and E-only migrations <code class="text-foreground">006_create_sales_summary.sql</code>.
                 Edit those files, then re-run the script — do not hand-edit generated YAML.
+                Map-shaped <code class="text-foreground">inputs:</code> /
+                <code class="text-foreground">stages:</code> fail validation.
+            </p>
+
+            <h2>External Parquet in the packer (Scenario F)</h2>
+            <p>
+                Scenario F is the ingest teaching package. The script copies
+                <code class="text-foreground">fixtures/tiny-ids.parquet</code> into the
+                tree, emits an <code class="text-foreground">external-parquet</code> root
+                (<code class="text-foreground">ingest_ids</code>, no connection, no SQL),
+                and a staged PostgreSQL load. Canonical SQL lives in
+                <code class="text-foreground">steps/F-ingest/</code> and migrations
+                <code class="text-foreground">007_create_ingest_schema.sql</code> /
+                <code class="text-foreground">008_create_ingest_ids.sql</code>.
+                Do not schedule the published version.
+                <a href="/labs/scenario-f" class="text-link hover:underline">Scenario F</a>,
+                <a href="/docs/developer-handler-contracts" class="text-link hover:underline">handler contracts</a>.
             </p>
 
             <h2>verify-connections.ps1</h2>

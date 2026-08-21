@@ -25,7 +25,7 @@ SELECT
     s.computed_line_total,
     s.header_total_due,
     (now() AT TIME ZONE 'utc')
-FROM {{ stage.order_summary }} AS s
+FROM {{ stage }} AS s
 ON CONFLICT (sales_order_id) DO UPDATE SET
     customer_id         = EXCLUDED.customer_id,
     order_day           = EXCLUDED.order_day,

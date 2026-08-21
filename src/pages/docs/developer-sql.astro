@@ -43,10 +43,14 @@ import DocsLayout from "../../layouts/docs.astro";
                 A human reviews, edits, and publishes. Embeddings and chat history live
                 on the control database (PostgreSQL 18 with pgvector). For artifact sinks,
                 assistance must emit logical tokens such as
-                <code class="text-foreground">{"{{ stage.name }}"}</code> and
-                <code class="text-foreground">{"{{ input.name }}"}</code>, never physical
+                <code class="text-foreground">{"{{ stage }}"}</code> /
+                <code class="text-foreground">{"{{ input }}"}</code> (one inbound file)
+                or <code class="text-foreground">{"{{ stage.name }}"}</code> /
+                <code class="text-foreground">{"{{ input.name }}"}</code> (several), never physical
                 temp table names or secrets. Dedicated walkthrough:
                 <a href="/docs/developer-sql-assist" class="text-link hover:underline">SQL Assist</a>.
+                Binding contract:
+                <a href="/docs/developer-handler-contracts" class="text-link hover:underline">Step handler contracts</a>.
             </p>
 
             <h2>Step handlers</h2>

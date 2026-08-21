@@ -23,7 +23,7 @@ SELECT
     s.unit_price,
     s.line_total,
     (now() AT TIME ZONE 'utc')
-FROM {{ stage.sales_line }} AS s
+FROM {{ stage }} AS s
 ON CONFLICT (sales_order_id, sales_order_detail_id) DO UPDATE SET
     product_id    = EXCLUDED.product_id,
     order_qty     = EXCLUDED.order_qty,

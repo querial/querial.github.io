@@ -20,6 +20,7 @@ import LabsLayout from "../../layouts/labs.astro";
                 <li>In the sidebar footer, select the team / project that should own the lab. Import never copies into another project.</li>
                 <li>Confirm you can see <strong class="text-foreground">Pipelines</strong> (Designer or operator) and, for import, the <strong class="text-foreground">Import package</strong> button (CanOperate only).</li>
                 <li>For B, C-PostgreSQL, D-PostgreSQL, and E: Artifacts and DuckDB extension flags must be on. Without them, extract/staged/artifact-sql handlers will not run.</li>
+                <li>For F: Artifacts and DAG execution must be on. Trigger with a multipart file. Do not create a schedule.</li>
             </ol>
 
             <h2>1. Import package</h2>
@@ -103,8 +104,15 @@ import LabsLayout from "../../layouts/labs.astro";
                 flags are on, legacy serial execution may still run the same handlers.
             </p>
             <p>
+                Scenario F: the Run now modal requires <code class="text-foreground">batch_label</code>
+                and the fixture as <code class="text-foreground">parquet.ids</code>. JSON-only
+                trigger is 400.
+                <a href="/docs/devops-trigger" class="text-link hover:underline">Trigger API</a>.
+            </p>
+            <p>
                 Optional: calendar-plus opens create-schedule on that deployment (friendly
-                cron or advanced). Not required for the first lab pass.
+                cron or advanced). Not required for the first lab pass. Skip this for
+                Scenario F — ingest versions cannot be scheduled.
             </p>
 
             <h2>6. Run history and run details</h2>
@@ -134,7 +142,7 @@ import LabsLayout from "../../layouts/labs.astro";
                 live status (SSE, with polling fallback). It is not the draft designer.
             </p>
             <ul class="list-disc pl-5 space-y-1">
-                <li>Root nodes are badged. C has several; D and E have one.</li>
+                <li>Root nodes are badged. C has several; D, E, and F have one.</li>
                 <li>Click a step: Inspector (status, agent, attempt, artifacts, retries, reused-on-cone), Logs, SQL for that published version.</li>
                 <li>Palette groups steps and migrations by connection. Migrations apply by deployment policy — they are not extra graph nodes.</li>
                 <li>Critical path tab: longest sequential dependency chain.</li>
@@ -144,7 +152,7 @@ import LabsLayout from "../../layouts/labs.astro";
             <h2>8. What “done” looks like</h2>
             <ul class="list-disc pl-5 space-y-1">
                 <li>Run status Succeeded (or Failed on a deliberate policy test).</li>
-                <li>Destination <code class="text-foreground">aw.*</code> row counts match the scenario page.</li>
+                <li>Destination <code class="text-foreground">aw.*</code> (A–E) or <code class="text-foreground">ingest.ids</code> (F) row counts match the scenario page.</li>
                 <li>Re-run is safe: lab SQL is idempotent (<code class="text-foreground">MERGE</code> / upsert). Cheap repeats are author-owned; Querial does not skip “already done” nodes on a normal trigger.</li>
             </ul>
             <p>

@@ -44,7 +44,7 @@ const features = [
     icon: Bot,
     title: "Artifacts without hiding SQL",
     description:
-      "Parquet on local disk or S3. DuckDB embedded in eligible agents. The only database sink is Staged Database SQL — bulk-load, then your merge SQL. There is no ArtifactToTable.",
+      "Parquet on local disk or S3. DuckDB embedded in eligible agents. Canvas edges bind inbound files; packages use a list of from_step rows, not a YAML map. The only database sink is Staged Database SQL — bulk-load, then your merge SQL. There is no ArtifactToTable.",
     spec: "No row-by-row Dapper loads",
     gradient: "from-querial-indigo-on-dark to-querial-indigo",
   },

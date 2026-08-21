@@ -14,5 +14,5 @@ SELECT
     CAST(customer_id AS INTEGER) AS customer_id,
     CAST(total_due AS DECIMAL(19, 4)) AS total_due,
     CAST(modified_date AS TIMESTAMP) AS modified_date
-FROM {{ input.sales_order }}
+FROM {{ input }}
 WHERE total_due IS NOT NULL;

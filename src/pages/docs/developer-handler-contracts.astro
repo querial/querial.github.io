@@ -1,0 +1,132 @@
+---
+import DocsLayout from "../../layouts/docs.astro";
+---
+
+<DocsLayout title="Step handler contracts — Querial">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-indigo-on-dark">For Developers</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Step handler contracts</h1>
+            <p class="mt-3 text-muted-foreground max-w-3xl">
+                Staged Database SQL, Artifact SQL, and External Parquet bind inbound
+                Parquet files. The DAG canvas is the binding UI. Packages use a
+                <strong class="text-foreground">list</strong> of
+                <code class="text-foreground">from_step</code> rows — not a YAML map
+                keyed by alias.
+            </p>
+        </div>
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground [&>h3]:text-foreground">
+            <h2>Canvas is the binding</h2>
+            <p>
+                Draw an <code class="text-foreground">artifact_available</code> edge
+                from a Parquet producer (extract, Artifact SQL, or External Parquet)
+                to the consumer. The designer stores one list entry per inbound file.
+                Do not type a JSON configuration blob for those bindings. Column types
+                belong in the nested <strong class="text-foreground">Edit columns</strong>
+                overlay (staged sinks). Artifact SQL v1 is summary-only: derived inputs,
+                no column grid.
+            </p>
+            <p>
+                Apply on the overlay writes hidden fields. Persist happens only when you
+                <strong class="text-foreground">Save step</strong>. Duplicate inbound
+                <code class="text-foreground">outputName</code> values are rejected.
+            </p>
+
+            <h2>Tokens</h2>
+            <p>
+                The qualifier is the producer’s <code class="text-foreground">outputName</code>,
+                frozen when the edge is first saved. Changing the producer’s output name
+                later does <strong class="text-foreground">not</strong> rewrite your SQL.
+            </p>
+            <div class="overflow-x-auto not-prose">
+                <table class="w-full text-sm">
+                    <thead><tr class="border-b border-border text-left"><th class="py-2 pr-4">Inbound files</th><th class="py-2">Token</th></tr></thead>
+                    <tbody class="text-muted-foreground">
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 text-foreground">One</td><td class="py-2"><code class="text-foreground">{"{{ stage }}"}</code> or <code class="text-foreground">{"{{ input }}"}</code>. Qualified form is also valid when that frozen name matches.</td></tr>
+                        <tr><td class="py-2 pr-4 text-foreground">Several</td><td class="py-2"><code class="text-foreground">{"{{ stage.sales_order }}"}</code> / <code class="text-foreground">{"{{ input.sales_line }}"}</code> — one qualifier per file. Bare tokens are rejected.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>
+                Empty <code class="text-foreground">{"{{ stage. }}"}</code> is an error.
+                Token identifiers are letters, digits, and underscore only. Physical
+                <code class="text-foreground">_querial_stg_*</code> names never belong
+                in authored SQL.
+            </p>
+
+            <h2>Package YAML is a list</h2>
+            <p>
+                Map-shaped <code class="text-foreground">stages:</code> /
+                <code class="text-foreground">inputs:</code> fail validation. There is
+                no dual parser. Export writes producer <strong class="text-foreground">codes</strong>
+                and drops control-database Guids, frozen <code class="text-foreground">name</code>,
+                and runtime artifact ids.
+            </p>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>config:
+  stages:
+    - from_step: ingest_ids
+      columns:
+        - source: id
+          name: id
+          type: int
+          nullable: false
+
+config:
+  outputName: order_summary
+  inputs:
+    - from_step: transform_sales_order
+    - from_step: transform_sales_line</code></pre>
+            <p>
+                PowerShell’s unwrap of a one-item hashtable is treated as a one-element
+                list when packing labs. Leftover drafts that still store map JSON fail
+                until you re-import a list package.
+            </p>
+
+            <h2>When columns are required</h2>
+            <p>
+                Empty stages/inputs are allowed until an inbound artifact edge exists.
+                After that, staged sinks need at least one column per file; Artifact SQL
+                needs at least one input. Publish uses a complete-bindings check.
+                Switching the step type away from staged / Artifact SQL / ingest strips
+                those keys; <code class="text-foreground">outputName</code> and ingest
+                retention survive via the existing merge helpers.
+            </p>
+            <p>
+                Posted column types are allow-listed simple SQL fragments (for example
+                <code class="text-foreground">int</code>,
+                <code class="text-foreground">timestamptz</code>,
+                <code class="text-foreground">nvarchar(4000)</code>,
+                <code class="text-foreground">datetime2(3)</code>,
+                <code class="text-foreground">numeric(19,4)</code>). Stage
+                <code class="text-foreground">type</code> is destination-provider DDL —
+                do not put PostgreSQL <code class="text-foreground">timestamptz</code>
+                on a SQL Server stage.
+            </p>
+
+            <h2>Fill from upstream</h2>
+            <ul class="list-disc pl-5 space-y-1">
+                <li><strong class="text-foreground">Staged Fill</strong> — producer describe-shape (the same preview guards as SQL Editor, never FMTONLY on the sink SQL). If that fails or there is no extract SQL, the last available artifact schema document for that step in this project.</li>
+                <li><strong class="text-foreground">Ingest Fill</strong> — upload a sample Parquet (size-capped, footer validated) or use the last ingest artifact. Invalid files return an error and leave the grid. No path-based sample files on the server.</li>
+            </ul>
+            <p>
+                You may rename destination columns, change types, or remove columns after
+                Fill. External Parquet <code class="text-foreground">expectedSchema</code>
+                remains optional.
+            </p>
+
+            <h2>Step and migration codes</h2>
+            <p>
+                Codes are generated from <strong class="text-foreground">Name</strong>
+                on create (slug; never a Guid). Edit posts cannot change them. They are
+                package identifiers, not SQL aliases. Unique
+                <code class="text-foreground">_2</code> suffix when the slug is taken.
+            </p>
+            <p>
+                Package format:
+                <a href="/docs/developer-packages" class="text-link hover:underline">Packages</a>.
+                Ingest roots:
+                <a href="/docs/developer-external-parquet" class="text-link hover:underline">External Parquet ingest</a>.
+            </p>
+        </div>
+    </div>
+</DocsLayout>

@@ -270,10 +270,8 @@ sql: sql/steps/045_transform_order_summary.sql
 config:
   outputName: order_summary
   inputs:
-    sales_order:
-      from_step: transform_sales_order
-    sales_line:
-      from_step: transform_sales_line
+    - from_step: transform_sales_order
+    - from_step: transform_sales_line
 
 # Sink — never bake artifactId / storeUri / checksum
 type: staged-database-sql
@@ -281,8 +279,7 @@ connection: aw-pg-dest
 sql: sql/steps/100_load_order_summary_postgres.sql
 config:
   stages:
-    order_summary:
-      from_step: transform_order_summary
+    - from_step: transform_order_summary
       columns:
         - source: sales_order_id
           name: sales_order_id
@@ -291,8 +288,15 @@ config:
   transaction:
     mode: stage-and-execute</code></pre>
             <p>
-                Sink SQL references <code class="text-foreground">{"{{ stage.order_summary }}"}</code>.
-                Artifact SQL references <code class="text-foreground">{"{{ input.sales_order }}"}</code>.
+                <code class="text-foreground">stages</code> and
+                <code class="text-foreground">inputs</code> are <strong class="text-foreground">lists</strong>.
+                Map-shaped YAML is rejected. Qualifiers in SQL are producer
+                <code class="text-foreground">outputName</code> values. One inbound file
+                may use <code class="text-foreground">{"{{ stage }}"}</code> /
+                <code class="text-foreground">{"{{ input }}"}</code>; several files need
+                <code class="text-foreground">{"{{ input.sales_order_transformed }}"}</code>.
+                Canvas edges are the binding UI —
+                <a href="/docs/developer-handler-contracts" class="text-link hover:underline">Step handler contracts</a>.
             </p>
 
             <h3>Edges</h3>
@@ -397,9 +401,10 @@ config:
                 Ready-made trees, zips, canonical SQL, and the packing script live on
                 the <a href="/labs" class="text-link hover:underline">Labs</a> pages.
                 Scenario E is extract → DuckDB join/aggregate → dual staged sinks.
-                An ingest lab is <code class="text-foreground">external-parquet</code>
+                Scenario F is <code class="text-foreground">external-parquet</code>
                 → PostgreSQL staged load and is not schedulable. Import is an operator
-                action; this role reviews the draft DAG and publishes.
+                action; this role reviews the draft DAG and publishes. Binding lists:
+                <a href="/docs/developer-handler-contracts" class="text-link hover:underline">Step handler contracts</a>.
             </p>
         </div>
     </div>

@@ -6,7 +6,7 @@
 -- Stage name: sales_line
 
 MERGE aw.sales_order_line AS t
-USING {{ stage.sales_line }} AS s
+USING {{ stage }} AS s
 ON t.sales_order_id = s.sales_order_id
    AND t.sales_order_detail_id = s.sales_order_detail_id
 WHEN MATCHED THEN

@@ -6,7 +6,7 @@
 -- Stage name: order_summary
 
 MERGE aw.sales_order_summary AS t
-USING {{ stage.order_summary }} AS s
+USING {{ stage }} AS s
 ON t.sales_order_id = s.sales_order_id
 WHEN MATCHED THEN
     UPDATE SET

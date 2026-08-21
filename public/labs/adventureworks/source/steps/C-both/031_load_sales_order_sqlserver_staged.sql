@@ -6,7 +6,7 @@
 -- Stage name: sales_order
 
 MERGE aw.sales_order AS t
-USING {{ stage.sales_order }} AS s
+USING {{ stage }} AS s
 ON t.sales_order_id = s.sales_order_id
 WHEN MATCHED AND t.modified_date <> s.modified_date THEN
     UPDATE SET

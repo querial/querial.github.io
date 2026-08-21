@@ -81,6 +81,16 @@ import DocsLayout from "../../layouts/docs.astro";
                 Sync hidden fields before submit. Uniqueness that would otherwise surface
                 as an opaque unique violation is pre-checked.
             </p>
+            <p>
+                Step and migration <strong class="text-foreground">codes</strong> are
+                generated from Name on create and cannot be changed later — they are
+                package identifiers, not SQL aliases. Staged Database SQL, Artifact SQL,
+                and External Parquet bind inbound Parquet from
+                <code class="text-foreground">artifact_available</code> canvas edges.
+                Column types live in a nested overlay; Fill reads producer describe-shape
+                or the last artifact, never FMTONLY on the sink.
+                <a href="/docs/developer-handler-contracts" class="text-link hover:underline">Step handler contracts</a>.
+            </p>
         </div>
     </div>
 </DocsLayout>

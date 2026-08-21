@@ -59,12 +59,14 @@ import LabsLayout from "../../layouts/labs.astro";
             <p>
                 <code class="text-foreground">load_product</code> —
                 <code class="text-foreground">staged-database-sql</code>.
-                Stage <code class="text-foreground">product</code> with
+                One list row with
                 <code class="text-foreground">from_step: extract_product</code>, column
                 contracts (id, name, product_number, color, costs, dates),
                 <code class="text-foreground">transaction.mode: stage-and-execute</code>.
-                Author SQL upserts from the staged symbol — there is no ArtifactToTable
+                SQL upserts from the bare token <code class="text-foreground">{"{{ stage }}"}</code>
+                because this sink has one inbound file. There is no ArtifactToTable
                 auto-copy.
+                <a href="/docs/developer-handler-contracts" class="text-link hover:underline">Handler contracts</a>.
             </p>
 
             <h2>Flags</h2>

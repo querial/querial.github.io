@@ -10,7 +10,8 @@ import LabsLayout from "../../layouts/labs.astro";
             <p class="text-muted-foreground mt-3">
                 <code class="text-foreground">aw-lab-all</code> is one zip with every
                 selected scenario pipeline and a union connection catalog. Use it when you
-                want all five labs in a single import into the current project.
+                want all six labs in a single import into the current project.
+                Scenario F is included in the default <code class="text-foreground">-Combined</code> set.
             </p>
         </div>
         <div class="flex flex-wrap gap-2">
@@ -27,7 +28,7 @@ import LabsLayout from "../../layouts/labs.astro";
             <h2>What is inside</h2>
             <ul class="list-disc pl-5 space-y-1">
                 <li>Package code <code class="text-foreground">aw-lab-all</code>.</li>
-                <li>Pipelines: <code class="text-foreground">aw_scenario_a</code> … <code class="text-foreground">aw_scenario_e</code> (when packed with the default scenario set).</li>
+                <li>Pipelines: <code class="text-foreground">aw_scenario_a</code> … <code class="text-foreground">aw_scenario_f</code> (when packed with the default scenario set).</li>
                 <li>Catalog union: <code class="text-foreground">aw-source</code>, <code class="text-foreground">aw-sql-dest</code>, <code class="text-foreground">aw-pg-dest</code>. Same name with different providers is rejected at pack time.</li>
                 <li>Each pipeline keeps its own connection allow-list from the original scenario.</li>
             </ul>
@@ -35,8 +36,8 @@ import LabsLayout from "../../layouts/labs.astro";
             <h2>Import</h2>
             <p>
                 Same modal as a single scenario. Resolve the three stubs once. Success
-                reports five pipelines. Overwrite drafts if you previously imported A–E
-                separately (same pipeline codes).
+                reports six pipelines. Overwrite drafts if you previously imported A–F
+                separately (same pipeline codes). F still cannot be scheduled after import.
             </p>
             <p>
                 Publish <strong class="text-foreground">each</strong> pipeline you intend

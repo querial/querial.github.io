@@ -1,12 +1,11 @@
-# Verify local AdventureWorks lab connections.
+# Verify local AdventureWorks lab connections
 #
 # Does not apply Querial migrations (leave that to the pipeline).
-# Requires: sqlcmd (for SQL Server checks), and either Docker with a running
-# PostgreSQL destination container or a reachable TCP port for PostgreSQL.
+# Requires: Docker (Aspire target-pg running), sqlcmd, Windows auth to SQL Server.
 #
 # Example:
 #   .\verify-connections.ps1
-#   .\verify-connections.ps1 -AdventureWorksDb AdventureWorks2022 -QuerialSqlDb YourDestName
+#   .\verify-connections.ps1 -AdventureWorksDb AdventureWorks2022 -QuerialSqlDb QuerialAdventureWorks
 
 [CmdletBinding()]
 param(
@@ -17,8 +16,7 @@ param(
     [int] $PgPort = 15434,
     [string] $PgDatabase = "querial_test",
     [string] $PgUser = "postgres",
-    [string] $PgPassword,
-    [string] $PgContainerName = "target-pg"
+    [string] $PgPassword = "1"
 )
 
 Set-StrictMode -Version Latest
@@ -64,30 +62,20 @@ else {
 
 Write-Host "PostgreSQL target ($PgHost`:$PgPort / $PgDatabase)" -ForegroundColor Cyan
 
-$docker = Get-Command docker -ErrorAction SilentlyContinue
-$cid = $null
-if ($null -ne $docker -and -not [string]::IsNullOrWhiteSpace($PgContainerName)) {
-    $cid = docker ps --filter "name=$PgContainerName" --format "{{.ID}}" 2>&1 | Select-Object -First 1
-}
-
-if ($cid) {
-    if ([string]::IsNullOrWhiteSpace($PgPassword)) {
-        Write-Check $false "Container '$PgContainerName' is running. Pass -PgPassword to query it with psql."
-        $failed++
-    }
-    else {
-        $pgOut = docker exec -e "PGPASSWORD=$PgPassword" $cid psql -U $PgUser -d $PgDatabase -tAc "SELECT current_database() || ' as ' || current_user;" 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            Write-Check $true "PostgreSQL reachable ($($pgOut.ToString().Trim()))"
-        }
-        else {
-            Write-Check $false "psql inside '$PgContainerName' failed. $($pgOut | Out-String)"
-            $failed++
-        }
-    }
+$cid = docker ps --filter "name=target-pg" --format "{{.ID}}" 2>&1 | Select-Object -First 1
+if (-not $cid) {
+    Write-Check $false "No running container matching name 'target-pg'. Start Aspire AppHost first."
+    $failed++
 }
 else {
-    Write-Host "  skip  No running Docker container named '$PgContainerName'. Checking TCP only." -ForegroundColor Yellow
+    $pgOut = docker exec -e "PGPASSWORD=$PgPassword" $cid psql -U $PgUser -d $PgDatabase -tAc "SELECT current_database() || ' as ' || current_user;" 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        Write-Check $true "querial_test reachable ($($pgOut.ToString().Trim()))"
+    }
+    else {
+        Write-Check $false "psql inside target-pg failed. $($pgOut | Out-String)"
+        $failed++
+    }
 }
 
 Write-Host "Host TCP $PgHost`:$PgPort (Querial connection string uses this)" -ForegroundColor Cyan
@@ -106,4 +94,4 @@ if ($failed -gt 0) {
     exit 1
 }
 
-Write-Host "`nAll checks passed. Next: import a scenario zip in Workspace (Pipelines → Import package)." -ForegroundColor Green
+Write-Host "`nAll checks passed. Next: lab/adventureworks/README.md" -ForegroundColor Green

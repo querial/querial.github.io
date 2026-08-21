@@ -82,8 +82,7 @@ import DocsLayout from "../../layouts/docs.astro";
     sql: sql/steps/020_load_ids.sql
     config:
       stages:
-        ids:
-          from_step: ingest_ids
+        - from_step: ingest_ids
           columns:
             - source: id
               name: id
@@ -95,11 +94,15 @@ dependencies:
     to: load_ids
     requirement: artifact_available</code></pre>
             <p>
-                Sink SQL uses <code class="text-foreground">{"{{ stage.ids }}"}</code>,
-                never a physical staging name. A ready-made lab package (fixture
-                <code class="text-foreground">tiny-ids.parquet</code>) follows this
-                shape — import is an operator action; this role reviews the draft DAG
-                and publishes.
+                Sink SQL uses the bare token <code class="text-foreground">{"{{ stage }}"}</code>
+                when the step has one inbound file (qualified
+                <code class="text-foreground">{"{{ stage.ids }}"}</code> is also valid).
+                Never a physical staging name. Lab Scenario F
+                (<a href="/labs/scenario-f" class="text-link hover:underline">External Parquet ingest</a>)
+                ships fixture <code class="text-foreground">tiny-ids.parquet</code> in this
+                shape. Import is an operator action; this role reviews the draft DAG
+                and publishes. Bindings:
+                <a href="/docs/developer-handler-contracts" class="text-link hover:underline">Step handler contracts</a>.
             </p>
 
             <h2>Retry and failed-cone</h2>

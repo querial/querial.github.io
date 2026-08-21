@@ -55,7 +55,12 @@ const faqs = [
   {
     question: "Can a pipeline start from a Parquet file I already have?",
     answer:
-      "Yes. An external-parquet step is a structural root with no SQL and no connection. You upload parquet.{outputName} on POST /api/trigger (multipart) or Web Run now. JSON-only trigger of an ingest version is 400. Cron cannot attach a file — those versions are not schedulable.",
+      "Yes. An external-parquet step is a structural root with no SQL and no connection. You upload parquet.{outputName} on POST /api/trigger (multipart) or Web Run now. JSON-only trigger of an ingest version is 400. Cron cannot attach a file — those versions are not schedulable. AdventureWorks Scenario F is the teaching package.",
+  },
+  {
+    question: "How do I bind Parquet files to Artifact SQL or a staged sink?",
+    answer:
+      "Draw an artifact_available edge from the producer. Packages store a list of from_step rows — map-shaped stages/inputs YAML is rejected. SQL uses {{ stage }} or {{ input }} when there is one inbound file, or {{ stage.outputName }} when there are several. Qualifiers are the producer output name, frozen when the edge is saved. Fill columns from upstream describe-shape or the last artifact; never FMTONLY on the sink SQL.",
   },
   {
     question: "How do I trigger a run from another system?",

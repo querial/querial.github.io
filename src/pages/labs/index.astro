@@ -42,6 +42,14 @@ const scenarios = [
         zip: "/labs/adventureworks/downloads/scenario-e-artifacts.zip",
         summary: "DuckDB artifact-sql: CAST filters, then a two-input JOIN/aggregate to aw.sales_order_summary on both destinations.",
     },
+    {
+        href: "/labs/scenario-f",
+        code: "F",
+        title: "External Parquet ingest",
+        package: "aw-scenario-f",
+        zip: "/labs/adventureworks/downloads/scenario-f-ingest.zip",
+        summary: "Trigger-time upload (external-parquet) into PostgreSQL ingest.ids. Not schedulable. Does not read AdventureWorks.",
+    },
 ];
 ---
 
@@ -51,9 +59,10 @@ const scenarios = [
             <p class="text-xs font-semibold uppercase tracking-wider text-querial-indigo-on-dark">AdventureWorks</p>
             <h1 class="text-3xl md:text-4xl font-bold mt-1">Labs</h1>
             <p class="text-muted-foreground mt-3 max-w-2xl">
-                Five scenario packages plus a combined zip. Import them into Workspace,
+                Six scenario packages plus a combined zip. Import them into Workspace,
                 bind Development endpoints, publish, create a deployment, trigger a run,
-                then watch the published graph in Run Graph.
+                then watch the published graph in Run Graph. Scenario F is ingest-only
+                and must be triggered with a file — do not schedule it.
             </p>
         </div>
 
@@ -101,11 +110,15 @@ const scenarios = [
         <div class="prose dark:prose-invert max-w-none space-y-4 [&>p]:text-muted-foreground [&>h2]:text-foreground">
             <h2>What these labs are</h2>
             <p>
-                AdventureWorks OLTP is the source. Destination tables live under schema
+                AdventureWorks OLTP is the source for A–E. Destination tables live under schema
                 <code class="text-foreground">aw</code> on SQL Server and/or PostgreSQL.
+                Scenario F writes <code class="text-foreground">ingest.ids</code> instead.
                 Packages are <code class="text-foreground">querial.package/v1</code>:
                 codes are identity, catalogs have no secrets, import materializes into the
                 <strong class="text-foreground">current project</strong>.
+                Staged and Artifact SQL bindings are a YAML <strong class="text-foreground">list</strong>
+                of <code class="text-foreground">from_step</code> rows —
+                <a href="/docs/developer-handler-contracts" class="text-link hover:underline">handler contracts</a>.
             </p>
             <h2>Who does which click</h2>
             <ul class="list-disc pl-5 space-y-1">
@@ -122,8 +135,8 @@ const scenarios = [
                 <li>A running Querial instance (Web, API, workers, PostgreSQL control plane).</li>
                 <li>Full AdventureWorks OLTP on SQL Server (not AdventureWorksLT). Three-part names in SQL assume catalog <code class="text-foreground">AdventureWorks</code> — edit and re-pack if yours is <code class="text-foreground">AdventureWorks2022</code>.</li>
                 <li>An empty-ish SQL Server destination catalog (examples use <code class="text-foreground">QuerialAdventureWorks</code>).</li>
-                <li>A PostgreSQL destination for B–E (local examples often use port <code class="text-foreground">15434</code> and database <code class="text-foreground">querial_test</code>).</li>
-                <li>Scenarios B, C (PostgreSQL half), D (PostgreSQL branch), and E need Artifacts and DuckDB extension flags on.</li>
+                <li>A PostgreSQL destination for B–F (local examples often use port <code class="text-foreground">15434</code> and database <code class="text-foreground">querial_test</code>).</li>
+                <li>Scenarios B, C (PostgreSQL half), D (PostgreSQL branch), and E need Artifacts and DuckDB extension flags on. F needs Artifacts and DAG execution (DuckDB not required).</li>
             </ul>
         </div>
     </div>

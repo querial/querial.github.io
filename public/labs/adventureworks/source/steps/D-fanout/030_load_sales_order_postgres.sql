@@ -23,7 +23,7 @@ SELECT
     s.total_due,
     s.modified_date,
     (now() AT TIME ZONE 'utc')
-FROM {{ stage.sales_order }} AS s
+FROM {{ stage }} AS s
 ON CONFLICT (sales_order_id) DO UPDATE SET
     order_date    = EXCLUDED.order_date,
     status        = EXCLUDED.status,

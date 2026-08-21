@@ -88,8 +88,10 @@ import DocsLayout from "../../layouts/docs.astro";
                 never survive into the inserted text. For artifact sinks, assistance
                 must emit logical tokens:
             </p>
-            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>{"{{ input.orders }}"}     -- Artifact SQL named input
-{"{{ stage.sales_order }}"} -- Staged Database SQL stage</code></pre>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>{"{{ input }}"}                 -- Artifact SQL, one inbound file
+{"{{ input.sales_order_transformed }}"}  -- Artifact SQL, several files (producer outputName)
+{"{{ stage }}"}                 -- Staged Database SQL, one inbound file
+{"{{ stage.sales_order }}"}     -- Staged Database SQL, several files</code></pre>
             <p>
                 Review the draft, bind Connection, then save. Pipeline execution still
                 uses the published version — never the chat history.
@@ -107,6 +109,8 @@ import DocsLayout from "../../layouts/docs.astro";
                 <a href="/docs/developer-sql" class="text-link hover:underline">SQL workspace, steps, and migrations</a>.
                 Schema source stubs in packages:
                 <a href="/docs/developer-packages" class="text-link hover:underline">Packages</a>.
+                Tokens and Fill:
+                <a href="/docs/developer-handler-contracts" class="text-link hover:underline">Step handler contracts</a>.
             </p>
         </div>
     </div>

@@ -11,5 +11,5 @@ SELECT
     CAST(order_qty AS INTEGER) AS order_qty,
     CAST(unit_price AS DECIMAL(19, 4)) AS unit_price,
     CAST(line_total AS DECIMAL(19, 4)) AS line_total
-FROM {{ input.sales_line }}
+FROM {{ input }}
 WHERE order_qty > 0;

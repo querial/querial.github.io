@@ -27,7 +27,7 @@ SELECT
     s.sell_start_date,
     s.modified_date,
     (now() AT TIME ZONE 'utc')
-FROM {{ stage.product }} AS s
+FROM {{ stage }} AS s
 ON CONFLICT (product_id) DO UPDATE SET
     name            = EXCLUDED.name,
     product_number  = EXCLUDED.product_number,

@@ -3,7 +3,7 @@ param(
     [switch]$Zip,
     [switch]$Validate,
     [switch]$Combined,
-    [string[]]$Scenarios = @("A", "B", "C", "D", "E"),
+    [string[]]$Scenarios = @("A", "B", "C", "D", "E", "F"),
     [string]$OutDir
 )
 
@@ -19,10 +19,10 @@ function Normalize-ScenarioSelection {
     param([string[]]$InputScenarios)
 
     if (-not $InputScenarios -or $InputScenarios.Count -eq 0) {
-        return @("A", "B", "C", "D", "E")
+        return @("A", "B", "C", "D", "E", "F")
     }
 
-    $allowed = @("A", "B", "C", "D", "E")
+    $allowed = @("A", "B", "C", "D", "E", "F")
     $normalized = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
     foreach ($scenario in $InputScenarios) {
         if ([string]::IsNullOrWhiteSpace($scenario)) {
@@ -75,10 +75,28 @@ function Copy-SqlFile {
 
     $sourcePath = Join-Path $SourceRoot $SourceRelativePath
     if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) {
-        throw "Missing SQL source file: $sourcePath"
+        throw "Missing lab source file: $sourcePath"
     }
 
     $targetPath = Join-Path $PipelineDir $TargetRelativePath
+    Ensure-Directory -Path (Split-Path -Path $targetPath -Parent)
+    Copy-Item -LiteralPath $sourcePath -Destination $targetPath -Force
+}
+
+function Copy-LabFile {
+    param(
+        [string]$SourceRoot,
+        [string]$DestRoot,
+        [string]$SourceRelativePath,
+        [string]$TargetRelativePath
+    )
+
+    $sourcePath = Join-Path $SourceRoot $SourceRelativePath
+    if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) {
+        throw "Missing lab source file: $sourcePath"
+    }
+
+    $targetPath = Join-Path $DestRoot $TargetRelativePath
     Ensure-Directory -Path (Split-Path -Path $targetPath -Parent)
     Copy-Item -LiteralPath $sourcePath -Destination $targetPath -Force
 }
@@ -192,9 +210,24 @@ function Format-YamlNode {
             }
 
             if (Test-YamlMapping -Value $child) {
-                $lines.Add("$prefix$($entry.Name):")
-                $lines.Add((Format-YamlNode -Value $child -Indent ($Indent + 2)))
-                continue
+                $unwrapBinding = $false
+                if ($entry.Name -eq "stages" -or $entry.Name -eq "inputs") {
+                    foreach ($mapEntry in @(Get-YamlMappingEntries -Value $child)) {
+                        if ($mapEntry.Name -eq "from_step" -or $mapEntry.Name -eq "fromStep") {
+                            $unwrapBinding = $true
+                            break
+                        }
+                    }
+                }
+
+                if (-not $unwrapBinding) {
+                    $lines.Add("$prefix$($entry.Name):")
+                    $lines.Add((Format-YamlNode -Value $child -Indent ($Indent + 2)))
+                    continue
+                }
+
+                # PowerShell unwraps a one-item stages/inputs array into a hashtable.
+                $child = @($child)
             }
 
             if ($child -is [System.Collections.IEnumerable] -and $child -isnot [string]) {
@@ -300,6 +333,19 @@ function Format-YamlNode {
 
     $lines.Add("$prefix$(Format-YamlScalar -Value $Value)")
     return ($lines -join [Environment]::NewLine)
+}
+
+function New-FromStepBinding {
+    param(
+        [string]$FromStep,
+        [object[]]$Columns = $null
+    )
+
+    $binding = [ordered]@{ from_step = $FromStep }
+    if ($null -ne $Columns) {
+        $binding.columns = @($Columns)
+    }
+    return $binding
 }
 
 function New-StageColumn {
@@ -415,6 +461,11 @@ function Write-PipelineYaml {
         ($connectionList | ForEach-Object { "- $(Quote-Yaml -Value $_)" }) -join [Environment]::NewLine
     }
 
+    $parameterItems = @()
+    if ($PipelineDefinition -is [hashtable] -and $PipelineDefinition.ContainsKey("Parameters") -and $PipelineDefinition.Parameters) {
+        $parameterItems = @($PipelineDefinition.Parameters)
+    }
+
     $lines = @(
         "code: $(Quote-Yaml -Value $PipelineDefinition.Code)"
         "name: $(Quote-Yaml -Value $PipelineDefinition.Name)"
@@ -422,6 +473,16 @@ function Write-PipelineYaml {
         "readme: 'README.md'"
         "connections:"
         (Indent-Block -Text $connectionLines -Spaces 2)
+    )
+
+    if ($parameterItems.Count -gt 0) {
+        $lines += @(
+            "parameters:"
+            (Indent-Block -Text (Build-YamlList -Items $parameterItems) -Spaces 2)
+        )
+    }
+
+    $lines += @(
         "steps:"
         (Indent-Block -Text $stepLines -Spaces 2)
         "migrations:"
@@ -500,6 +561,7 @@ function Invoke-PackageValidation {
     param(
         [string]$PackageDir,
         [bool]$PackageCliAvailable,
+        [string]$RepoRoot,
         [string]$PackageCliProject
     )
 
@@ -561,6 +623,7 @@ function Invoke-PackageZip {
 }
 
 $scriptRoot = Split-Path -Path $MyInvocation.MyCommand.Path -Parent
+$repoRoot = [System.IO.Path]::GetFullPath((Join-Path $scriptRoot "..\.."))
 $sourceRoot = $scriptRoot
 $selectedScenarios = Normalize-ScenarioSelection -InputScenarios $Scenarios
 if ([string]::IsNullOrWhiteSpace($OutDir)) {
@@ -573,8 +636,6 @@ else {
     $outputRoot = [System.IO.Path]::GetFullPath((Join-Path $sourceRoot $OutDir))
 }
 
-# Optional: set QUERIAL_PACKAGE_CLI to a Package CLI .csproj for checksum-stable zips.
-# Without it, -Zip uses Compress-Archive and -Validate does a structural file check.
 $packageCliProject = $env:QUERIAL_PACKAGE_CLI
 $packageCliAvailable = -not [string]::IsNullOrWhiteSpace($packageCliProject) -and (Test-Path -LiteralPath $packageCliProject -PathType Leaf)
 
@@ -702,21 +763,18 @@ Requires `Querial:Extensions:Artifacts` and `Querial:Extensions:DuckDb` (Aspire 
                         connection      = "aw-pg-dest"
                         sql             = "sql/steps/020_load_product.sql"
                         config          = [ordered]@{
-                            stages = [ordered]@{
-                                product = [ordered]@{
-                                    from_step = "extract_product"
-                                    columns   = @(
-                                        (New-StageColumn -Source "product_id" -Type "int")
-                                        (New-StageColumn -Source "name" -Type "text")
-                                        (New-StageColumn -Source "product_number" -Type "text")
-                                        (New-StageColumn -Source "color" -Type "text" -Nullable $true)
-                                        (New-StageColumn -Source "standard_cost" -Type "numeric")
-                                        (New-StageColumn -Source "list_price" -Type "numeric")
-                                        (New-StageColumn -Source "sell_start_date" -Type "timestamptz")
-                                        (New-StageColumn -Source "modified_date" -Type "timestamptz")
-                                    )
-                                }
-                            }
+                            stages = @(
+                                (New-FromStepBinding -FromStep "extract_product" -Columns @(
+                                    (New-StageColumn -Source "product_id" -Type "int")
+                                    (New-StageColumn -Source "name" -Type "text")
+                                    (New-StageColumn -Source "product_number" -Type "text")
+                                    (New-StageColumn -Source "color" -Type "text" -Nullable $true)
+                                    (New-StageColumn -Source "standard_cost" -Type "numeric")
+                                    (New-StageColumn -Source "list_price" -Type "numeric")
+                                    (New-StageColumn -Source "sell_start_date" -Type "timestamptz")
+                                    (New-StageColumn -Source "modified_date" -Type "timestamptz")
+                                ))
+                            )
                             transaction = [ordered]@{
                                 mode = "stage-and-execute"
                             }
@@ -840,19 +898,19 @@ Reference-only under this package (promoted to real steps in Lab **E**):
                         connection      = "aw-pg-dest"
                         sql             = "sql/steps/040_load_sales_order_postgres.sql"
                         config          = [ordered]@{
-                            stages = [ordered]@{
-                                sales_order = [ordered]@{
+                            stages = @(
+                                [ordered]@{
                                     from_step = "extract_sales_order"
                                     columns   = @(
-                                        (New-StageColumn -Source "sales_order_id" -Type "int")
-                                        (New-StageColumn -Source "order_date" -Type "timestamptz")
-                                        (New-StageColumn -Source "status" -Type "int")
-                                        (New-StageColumn -Source "customer_id" -Type "int")
-                                        (New-StageColumn -Source "total_due" -Type "numeric")
-                                        (New-StageColumn -Source "modified_date" -Type "timestamptz")
+                                    (New-StageColumn -Source "sales_order_id" -Type "int")
+                                    (New-StageColumn -Source "order_date" -Type "timestamptz")
+                                    (New-StageColumn -Source "status" -Type "int")
+                                    (New-StageColumn -Source "customer_id" -Type "int")
+                                    (New-StageColumn -Source "total_due" -Type "numeric")
+                                    (New-StageColumn -Source "modified_date" -Type "timestamptz")
                                     )
-                                }
-                            }
+                                    }
+                            )
                             transaction = [ordered]@{
                                 mode = "stage-and-execute"
                             }
@@ -867,19 +925,19 @@ Reference-only under this package (promoted to real steps in Lab **E**):
                         connection      = "aw-pg-dest"
                         sql             = "sql/steps/060_load_sales_line_postgres.sql"
                         config          = [ordered]@{
-                            stages = [ordered]@{
-                                sales_line = [ordered]@{
+                            stages = @(
+                                [ordered]@{
                                     from_step = "extract_sales_line"
                                     columns   = @(
-                                        (New-StageColumn -Source "sales_order_id" -Type "int")
-                                        (New-StageColumn -Source "sales_order_detail_id" -Type "int")
-                                        (New-StageColumn -Source "product_id" -Type "int")
-                                        (New-StageColumn -Source "order_qty" -Type "int")
-                                        (New-StageColumn -Source "unit_price" -Type "numeric")
-                                        (New-StageColumn -Source "line_total" -Type "numeric")
+                                    (New-StageColumn -Source "sales_order_id" -Type "int")
+                                    (New-StageColumn -Source "sales_order_detail_id" -Type "int")
+                                    (New-StageColumn -Source "product_id" -Type "int")
+                                    (New-StageColumn -Source "order_qty" -Type "int")
+                                    (New-StageColumn -Source "unit_price" -Type "numeric")
+                                    (New-StageColumn -Source "line_total" -Type "numeric")
                                     )
-                                }
-                            }
+                                    }
+                            )
                             transaction = [ordered]@{
                                 mode = "stage-and-execute"
                             }
@@ -995,19 +1053,19 @@ PostgreSQL branch requires `Querial:Extensions:Artifacts` and `Querial:Extension
                         connection      = "aw-pg-dest"
                         sql             = "sql/steps/030_load_sales_order_postgres.sql"
                         config          = [ordered]@{
-                            stages = [ordered]@{
-                                sales_order = [ordered]@{
+                            stages = @(
+                                [ordered]@{
                                     from_step = "extract_sales_order"
                                     columns   = @(
-                                        (New-StageColumn -Source "sales_order_id" -Type "int")
-                                        (New-StageColumn -Source "order_date" -Type "timestamptz")
-                                        (New-StageColumn -Source "status" -Type "int")
-                                        (New-StageColumn -Source "customer_id" -Type "int")
-                                        (New-StageColumn -Source "total_due" -Type "numeric")
-                                        (New-StageColumn -Source "modified_date" -Type "timestamptz")
+                                    (New-StageColumn -Source "sales_order_id" -Type "int")
+                                    (New-StageColumn -Source "order_date" -Type "timestamptz")
+                                    (New-StageColumn -Source "status" -Type "int")
+                                    (New-StageColumn -Source "customer_id" -Type "int")
+                                    (New-StageColumn -Source "total_due" -Type "numeric")
+                                    (New-StageColumn -Source "modified_date" -Type "timestamptz")
                                     )
-                                }
-                            }
+                                    }
+                            )
                             transaction = [ordered]@{
                                 mode = "stage-and-execute"
                             }
@@ -1089,7 +1147,7 @@ INNER JOIN {{ input.sales_line }} AS l
 GROUP BY ...
 ```
 
-`config.inputs.<name>.from_step` must match those input names. `config.outputName` is required and unique.
+`config.inputs` is a list of `{ from_step }` objects (producer step codes). SQL uses `{{ input }}` when there is one inbound file, or `{{ input.outputName }}` when there are several. `config.outputName` is required and unique.
 
 ## Lab contrast
 
@@ -1115,7 +1173,7 @@ Requires **both**:
 - `Querial:Extensions:Artifacts=true`
 - `Querial:Extensions:DuckDb=true`
 
-Enable both flags on your Querial instance.
+Aspire AppHost enables these for local lab runs.
 
 ## Failed-cone recovery (ADR 0027 Lab E)
 
@@ -1171,11 +1229,11 @@ Full retry still re-extracts. Same-agent ArtifactLocalizer cache (no re-download
                         sql             = "sql/steps/030_transform_sales_order.sql"
                         config          = [ordered]@{
                             outputName = "sales_order_transformed"
-                            inputs     = [ordered]@{
-                                sales_order = [ordered]@{
+                            inputs = @(
+                                [ordered]@{
                                     from_step = "extract_sales_order"
-                                }
-                            }
+                                    }
+                            )
                         }
                     }
                     [pscustomobject]@{
@@ -1186,11 +1244,11 @@ Full retry still re-extracts. Same-agent ArtifactLocalizer cache (no re-download
                         sql             = "sql/steps/040_transform_sales_line.sql"
                         config          = [ordered]@{
                             outputName = "sales_line_transformed"
-                            inputs     = [ordered]@{
-                                sales_line = [ordered]@{
+                            inputs = @(
+                                [ordered]@{
                                     from_step = "extract_sales_line"
-                                }
-                            }
+                                    }
+                            )
                         }
                     }
                     [pscustomobject]@{
@@ -1201,14 +1259,14 @@ Full retry still re-extracts. Same-agent ArtifactLocalizer cache (no re-download
                         sql             = "sql/steps/045_transform_order_summary.sql"
                         config          = [ordered]@{
                             outputName = "order_summary"
-                            inputs     = [ordered]@{
-                                sales_order = [ordered]@{
+                            inputs = @(
+                                [ordered]@{
                                     from_step = "transform_sales_order"
-                                }
-                                sales_line  = [ordered]@{
+                                    },
+                                [ordered]@{
                                     from_step = "transform_sales_line"
-                                }
-                            }
+                                    }
+                            )
                         }
                     }
                     [pscustomobject]@{
@@ -1219,19 +1277,19 @@ Full retry still re-extracts. Same-agent ArtifactLocalizer cache (no re-download
                         connection      = "aw-sql-dest"
                         sql             = "sql/steps/050_load_sales_order_sqlserver.sql"
                         config          = [ordered]@{
-                            stages = [ordered]@{
-                                sales_order = [ordered]@{
+                            stages = @(
+                                [ordered]@{
                                     from_step = "transform_sales_order"
                                     columns   = @(
-                                        (New-StageColumn -Source "sales_order_id" -Type "int")
-                                        (New-StageColumn -Source "order_date" -Type "timestamptz")
-                                        (New-StageColumn -Source "status" -Type "int")
-                                        (New-StageColumn -Source "customer_id" -Type "int")
-                                        (New-StageColumn -Source "total_due" -Type "numeric")
-                                        (New-StageColumn -Source "modified_date" -Type "timestamptz")
+                                    (New-StageColumn -Source "sales_order_id" -Type "int")
+                                    (New-StageColumn -Source "order_date" -Type "datetime2(3)")
+                                    (New-StageColumn -Source "status" -Type "int")
+                                    (New-StageColumn -Source "customer_id" -Type "int")
+                                    (New-StageColumn -Source "total_due" -Type "decimal(19,4)")
+                                    (New-StageColumn -Source "modified_date" -Type "datetime2(3)")
                                     )
-                                }
-                            }
+                                    }
+                            )
                             transaction = [ordered]@{
                                 mode = "stage-and-execute"
                             }
@@ -1245,19 +1303,19 @@ Full retry still re-extracts. Same-agent ArtifactLocalizer cache (no re-download
                         connection      = "aw-pg-dest"
                         sql             = "sql/steps/060_load_sales_order_postgres.sql"
                         config          = [ordered]@{
-                            stages = [ordered]@{
-                                sales_order = [ordered]@{
+                            stages = @(
+                                [ordered]@{
                                     from_step = "transform_sales_order"
                                     columns   = @(
-                                        (New-StageColumn -Source "sales_order_id" -Type "int")
-                                        (New-StageColumn -Source "order_date" -Type "timestamptz")
-                                        (New-StageColumn -Source "status" -Type "int")
-                                        (New-StageColumn -Source "customer_id" -Type "int")
-                                        (New-StageColumn -Source "total_due" -Type "numeric")
-                                        (New-StageColumn -Source "modified_date" -Type "timestamptz")
+                                    (New-StageColumn -Source "sales_order_id" -Type "int")
+                                    (New-StageColumn -Source "order_date" -Type "timestamp")
+                                    (New-StageColumn -Source "status" -Type "int")
+                                    (New-StageColumn -Source "customer_id" -Type "int")
+                                    (New-StageColumn -Source "total_due" -Type "numeric(19,4)")
+                                    (New-StageColumn -Source "modified_date" -Type "timestamp")
                                     )
-                                }
-                            }
+                                    }
+                            )
                             transaction = [ordered]@{
                                 mode = "stage-and-execute"
                             }
@@ -1271,19 +1329,19 @@ Full retry still re-extracts. Same-agent ArtifactLocalizer cache (no re-download
                         connection      = "aw-sql-dest"
                         sql             = "sql/steps/070_load_sales_line_sqlserver.sql"
                         config          = [ordered]@{
-                            stages = [ordered]@{
-                                sales_line = [ordered]@{
+                            stages = @(
+                                [ordered]@{
                                     from_step = "transform_sales_line"
                                     columns   = @(
-                                        (New-StageColumn -Source "sales_order_id" -Type "int")
-                                        (New-StageColumn -Source "sales_order_detail_id" -Type "int")
-                                        (New-StageColumn -Source "product_id" -Type "int")
-                                        (New-StageColumn -Source "order_qty" -Type "int")
-                                        (New-StageColumn -Source "unit_price" -Type "numeric")
-                                        (New-StageColumn -Source "line_total" -Type "numeric")
+                                    (New-StageColumn -Source "sales_order_id" -Type "int")
+                                    (New-StageColumn -Source "sales_order_detail_id" -Type "int")
+                                    (New-StageColumn -Source "product_id" -Type "int")
+                                    (New-StageColumn -Source "order_qty" -Type "int")
+                                    (New-StageColumn -Source "unit_price" -Type "decimal(19,4)")
+                                    (New-StageColumn -Source "line_total" -Type "decimal(19,4)")
                                     )
-                                }
-                            }
+                                    }
+                            )
                             transaction = [ordered]@{
                                 mode = "stage-and-execute"
                             }
@@ -1297,19 +1355,19 @@ Full retry still re-extracts. Same-agent ArtifactLocalizer cache (no re-download
                         connection      = "aw-pg-dest"
                         sql             = "sql/steps/080_load_sales_line_postgres.sql"
                         config          = [ordered]@{
-                            stages = [ordered]@{
-                                sales_line = [ordered]@{
+                            stages = @(
+                                [ordered]@{
                                     from_step = "transform_sales_line"
                                     columns   = @(
-                                        (New-StageColumn -Source "sales_order_id" -Type "int")
-                                        (New-StageColumn -Source "sales_order_detail_id" -Type "int")
-                                        (New-StageColumn -Source "product_id" -Type "int")
-                                        (New-StageColumn -Source "order_qty" -Type "int")
-                                        (New-StageColumn -Source "unit_price" -Type "numeric")
-                                        (New-StageColumn -Source "line_total" -Type "numeric")
+                                    (New-StageColumn -Source "sales_order_id" -Type "int")
+                                    (New-StageColumn -Source "sales_order_detail_id" -Type "int")
+                                    (New-StageColumn -Source "product_id" -Type "int")
+                                    (New-StageColumn -Source "order_qty" -Type "int")
+                                    (New-StageColumn -Source "unit_price" -Type "numeric(19,4)")
+                                    (New-StageColumn -Source "line_total" -Type "numeric(19,4)")
                                     )
-                                }
-                            }
+                                    }
+                            )
                             transaction = [ordered]@{
                                 mode = "stage-and-execute"
                             }
@@ -1323,20 +1381,20 @@ Full retry still re-extracts. Same-agent ArtifactLocalizer cache (no re-download
                         connection      = "aw-sql-dest"
                         sql             = "sql/steps/090_load_order_summary_sqlserver.sql"
                         config          = [ordered]@{
-                            stages = [ordered]@{
-                                order_summary = [ordered]@{
+                            stages = @(
+                                [ordered]@{
                                     from_step = "transform_order_summary"
                                     columns   = @(
-                                        (New-StageColumn -Source "sales_order_id" -Type "int")
-                                        (New-StageColumn -Source "customer_id" -Type "int")
-                                        (New-StageColumn -Source "order_day" -Type "date")
-                                        (New-StageColumn -Source "line_count" -Type "int")
-                                        (New-StageColumn -Source "total_qty" -Type "int")
-                                        (New-StageColumn -Source "computed_line_total" -Type "numeric")
-                                        (New-StageColumn -Source "header_total_due" -Type "numeric")
+                                    (New-StageColumn -Source "sales_order_id" -Type "int")
+                                    (New-StageColumn -Source "customer_id" -Type "int")
+                                    (New-StageColumn -Source "order_day" -Type "date")
+                                    (New-StageColumn -Source "line_count" -Type "int")
+                                    (New-StageColumn -Source "total_qty" -Type "int")
+                                    (New-StageColumn -Source "computed_line_total" -Type "decimal(19,4)")
+                                    (New-StageColumn -Source "header_total_due" -Type "decimal(19,4)")
                                     )
-                                }
-                            }
+                                    }
+                            )
                             transaction = [ordered]@{
                                 mode = "stage-and-execute"
                             }
@@ -1350,20 +1408,20 @@ Full retry still re-extracts. Same-agent ArtifactLocalizer cache (no re-download
                         connection      = "aw-pg-dest"
                         sql             = "sql/steps/100_load_order_summary_postgres.sql"
                         config          = [ordered]@{
-                            stages = [ordered]@{
-                                order_summary = [ordered]@{
+                            stages = @(
+                                [ordered]@{
                                     from_step = "transform_order_summary"
                                     columns   = @(
-                                        (New-StageColumn -Source "sales_order_id" -Type "int")
-                                        (New-StageColumn -Source "customer_id" -Type "int")
-                                        (New-StageColumn -Source "order_day" -Type "date")
-                                        (New-StageColumn -Source "line_count" -Type "int")
-                                        (New-StageColumn -Source "total_qty" -Type "int")
-                                        (New-StageColumn -Source "computed_line_total" -Type "numeric")
-                                        (New-StageColumn -Source "header_total_due" -Type "numeric")
+                                    (New-StageColumn -Source "sales_order_id" -Type "int")
+                                    (New-StageColumn -Source "customer_id" -Type "int")
+                                    (New-StageColumn -Source "order_day" -Type "date")
+                                    (New-StageColumn -Source "line_count" -Type "int")
+                                    (New-StageColumn -Source "total_qty" -Type "int")
+                                    (New-StageColumn -Source "computed_line_total" -Type "numeric(19,4)")
+                                    (New-StageColumn -Source "header_total_due" -Type "numeric(19,4)")
                                     )
-                                }
-                            }
+                                    }
+                            )
                             transaction = [ordered]@{
                                 mode = "stage-and-execute"
                             }
@@ -1407,6 +1465,138 @@ Full retry still re-extracts. Same-agent ArtifactLocalizer cache (no re-download
             }
         )
     }
+    "F" = @{
+        ScenarioCode = "F"
+        PackageDirectory = "scenario-f-ingest"
+        PackageCode = "aw-scenario-f"
+        PackageName = "AdventureWorks Scenario F"
+        PackageDescription = "Trigger-time external Parquet ingest into PostgreSQL. Not schedulable."
+        Revision = "ingest-lab-v1"
+        Connections = @(
+            [pscustomobject]@{ name = "aw-pg-dest"; provider = "postgresql"; description = "PostgreSQL destination logical connection stub." }
+        )
+        ExtraCopies = @(
+            [pscustomobject]@{ Source = "fixtures/tiny-ids.parquet"; Target = "fixtures/tiny-ids.parquet" }
+        )
+        Pipelines = @(
+            @{
+                Code = "aw_scenario_f"
+                Name = "AW Scenario F External Parquet ingest"
+                Description = "external-parquet root plus staged PostgreSQL load. Trigger with parameters and parquet.ids; do not schedule."
+                Readme = @'
+# AW Scenario F - External Parquet ingest
+
+Upload a tiny Parquet file at **trigger** time. Querial seeds it as the `ids` artifact, then `staged-database-sql` upserts into PostgreSQL `ingest.ids`.
+
+**Do not create a schedule** for this version. Cron create/enable is refused; a leftover fire fails closed.
+
+This scenario does not read AdventureWorks. It uses the same `aw-pg-dest` warehouse as B-E.
+
+## Fixture
+
+Multipart field name: `parquet.ids`
+
+Canonical file: `lab/adventureworks/fixtures/tiny-ids.parquet` (same generated three-row `id` file as the Trigger Demo). Copied into the package as `fixtures/tiny-ids.parquet`.
+
+## Connections
+
+- `aw-pg-dest` - PostgreSQL destination. Bind to Aspire **target-pg** database `querial_test` (host `127.0.0.1`, port `15434`). Stub only in the package; no secrets.
+
+## Parameters
+
+| Code | Type | Required | Notes |
+|------|------|----------|--------|
+| `batch_label` | string | yes | Default `lab`. Sent on JSON or multipart `parameters`. The sink table does not store it; it exists so Run now / Trigger Demo show a typed field next to the file. |
+
+## Steps
+
+1. `ingest_ids` (`external-parquet`) - structural root, `outputName: ids`, `retentionDays: 30`, no connection, no SQL.
+2. `load_ids` (`staged-database-sql`) - stages `ids` and upserts `ingest.ids`.
+
+Dependency uses `artifact_available`.
+
+## Lab contrast
+
+| Lab | Focus |
+|-----|--------|
+| **E** | Extract AdventureWorks to Parquet, DuckDB transforms, dual staged sinks |
+| **F** | Upload Parquet at trigger (`external-parquet`) into PostgreSQL only |
+
+## Runtime flags
+
+Requires **Artifacts** and **DagExecution**.
+
+## How to run
+
+1. Import `packages/scenario-f-ingest/` (or `aw-lab-all` then publish `aw_scenario_f`).
+2. Connection wizard: map `aw-pg-dest` to the PostgreSQL warehouse.
+3. Publish the pipeline. Deploy to a non-production environment.
+4. **Run now** (or `POST /api/trigger` multipart): set `batch_label`, attach the fixture as `parquet.ids`.
+5. JSON-only trigger of this version -> 400.
+6. Confirm Artifact details shows expiry; `SELECT * FROM ingest.ids`.
+'@
+                Parameters = @(
+                    [pscustomobject]@{
+                        code          = "batch_label"
+                        display_name  = "Batch label"
+                        description   = "Typed trigger parameter (multipart still requires this plus the file)."
+                        param_type    = "string"
+                        default_value = "lab"
+                        is_required   = $true
+                        display_order = 1
+                    }
+                )
+                Migrations = @(
+                    [pscustomobject]@{ code = "ingest_001_create_schema"; name = "Create ingest schema"; execution_order = 1; connection = "aw-pg-dest"; sql = "sql/migrations/pg/007_create_ingest_schema.sql" }
+                    [pscustomobject]@{ code = "ingest_002_create_ids"; name = "Create ingest.ids"; execution_order = 2; connection = "aw-pg-dest"; sql = "sql/migrations/pg/008_create_ingest_ids.sql" }
+                )
+                MigrationDependencies = @(
+                    [pscustomobject]@{ from = "ingest_001_create_schema"; to = "ingest_002_create_ids" }
+                )
+                Steps = @(
+                    [pscustomobject]@{
+                        code            = "ingest_ids"
+                        name            = "Upload ids Parquet"
+                        type            = "external-parquet"
+                        execution_order = 10
+                        config          = [ordered]@{
+                            outputName    = "ids"
+                            retentionDays = 30
+                        }
+                    }
+                    [pscustomobject]@{
+                        code            = "load_ids"
+                        name            = "Load ids"
+                        type            = "staged-database-sql"
+                        execution_order = 20
+                        connection      = "aw-pg-dest"
+                        sql             = "sql/steps/020_load_ids.sql"
+                        config          = [ordered]@{
+                            stages = @(
+                                [ordered]@{
+                                    from_step = "ingest_ids"
+                                    columns   = @(
+                                    (New-StageColumn -Source "id" -Type "int")
+                                    )
+                                    }
+                            )
+                            transaction = [ordered]@{
+                                mode = "stage-and-execute"
+                            }
+                        }
+                    }
+                )
+                Dependencies = @(
+                    [pscustomobject]@{ from = "ingest_ids"; to = "load_ids"; requirement = "artifact_available" }
+                )
+                SqlCopies = @(
+                    [pscustomobject]@{ Source = "migrations/postgres/007_create_ingest_schema.sql"; Target = "sql/migrations/pg/007_create_ingest_schema.sql" }
+                    [pscustomobject]@{ Source = "migrations/postgres/008_create_ingest_ids.sql"; Target = "sql/migrations/pg/008_create_ingest_ids.sql" }
+                    [pscustomobject]@{ Source = "steps/F-ingest/020_load_ids.sql"; Target = "sql/steps/020_load_ids.sql" }
+                )
+            }
+        )
+    }
 }
 
 function Build-PackageFromDefinition {
@@ -1422,6 +1612,13 @@ function Build-PackageFromDefinition {
     Write-ManifestYaml -PackageDir $packageDir -ScenarioDefinition $ScenarioDefinition
     Write-CatalogYaml -PackageDir $packageDir -ScenarioDefinition $ScenarioDefinition
 
+    if ($ScenarioDefinition -is [hashtable] -and $ScenarioDefinition.ContainsKey("ExtraCopies") -and $ScenarioDefinition.ExtraCopies) {
+        foreach ($fileMap in $ScenarioDefinition.ExtraCopies) {
+            Copy-LabFile -SourceRoot $sourceRoot -DestRoot $packageDir `
+                -SourceRelativePath $fileMap.Source -TargetRelativePath $fileMap.Target
+        }
+    }
+
     foreach ($pipeline in $ScenarioDefinition.Pipelines) {
         $pipelineDir = Join-Path $packageDir "pipelines/$($pipeline.Code)"
         Ensure-Directory -Path $pipelineDir
@@ -1436,7 +1633,7 @@ function Build-PackageFromDefinition {
     }
 
     if ($Validate) {
-        Invoke-PackageValidation -PackageDir $packageDir -PackageCliAvailable:$packageCliAvailable -PackageCliProject $packageCliProject
+        Invoke-PackageValidation -PackageDir $packageDir -PackageCliAvailable:$packageCliAvailable -RepoRoot $repoRoot -PackageCliProject $packageCliProject
     }
 
     if ($Zip) {
@@ -1456,6 +1653,7 @@ function New-CombinedScenarioDefinition {
     $pipelines = [System.Collections.Generic.List[object]]::new()
     $pipelineCodes = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
     $connectionsByName = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $extraCopiesByTarget = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
     $scenarioLabels = [System.Collections.Generic.List[string]]::new()
 
     foreach ($key in $ScenarioKeys) {
@@ -1477,6 +1675,15 @@ function New-CombinedScenarioDefinition {
             }
 
             $connectionsByName[$name] = $connection
+        }
+
+        if ($scenario -is [hashtable] -and $scenario.ContainsKey("ExtraCopies") -and $scenario.ExtraCopies) {
+            foreach ($copy in $scenario.ExtraCopies) {
+                $target = [string]$copy.Target
+                if (-not $extraCopiesByTarget.ContainsKey($target)) {
+                    $extraCopiesByTarget[$target] = $copy
+                }
+            }
         }
 
         foreach ($pipeline in $scenario.Pipelines) {
@@ -1504,6 +1711,7 @@ function New-CombinedScenarioDefinition {
         PackageDescription = "Combined AdventureWorks lab package for scenarios $labels."
         Revision = "phase6-lab-v1"
         Connections = @($connectionsByName.Values)
+        ExtraCopies = @($extraCopiesByTarget.Values)
         Pipelines = @($pipelines)
     }
 }
