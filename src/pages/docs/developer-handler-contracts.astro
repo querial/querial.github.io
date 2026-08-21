@@ -43,7 +43,7 @@ import DocsLayout from "../../layouts/docs.astro";
                     <thead><tr class="border-b border-border text-left"><th class="py-2 pr-4">Inbound files</th><th class="py-2">Token</th></tr></thead>
                     <tbody class="text-muted-foreground">
                         <tr class="border-b border-border/50"><td class="py-2 pr-4 text-foreground">One</td><td class="py-2"><code class="text-foreground">{"{{ stage }}"}</code> or <code class="text-foreground">{"{{ input }}"}</code>. Qualified form is also valid when that frozen name matches.</td></tr>
-                        <tr><td class="py-2 pr-4 text-foreground">Several</td><td class="py-2"><code class="text-foreground">{"{{ stage.sales_order }}"}</code> / <code class="text-foreground">{"{{ input.sales_line }}"}</code> — one qualifier per file. Bare tokens are rejected.</td></tr>
+                        <tr><td class="py-2 pr-4 text-foreground">Several</td><td class="py-2"><code class="text-foreground">{"{{ input.sales_order_transformed }}"}</code> / <code class="text-foreground">{"{{ input.sales_line_transformed }}"}</code> — one qualifier per file (producer output name). Bare tokens are rejected.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -60,7 +60,11 @@ import DocsLayout from "../../layouts/docs.astro";
                 <code class="text-foreground">inputs:</code> fail validation. There is
                 no dual parser. Export writes producer <strong class="text-foreground">codes</strong>
                 and drops control-database Guids, frozen <code class="text-foreground">name</code>,
-                and runtime artifact ids.
+                and runtime artifact ids. Import fills frozen
+                <code class="text-foreground">name</code> from the producer
+                <code class="text-foreground">outputName</code> so tokens such as
+                <code class="text-foreground">{"{{ input.sales_order_transformed }}"}</code>
+                compile. Package YAML never stores Guids.
             </p>
             <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>config:
   stages:

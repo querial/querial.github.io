@@ -143,7 +143,7 @@ import LabsLayout from "../../layouts/labs.astro";
                 <code class="text-foreground">connection</code>):
             </p>
             <ul class="list-disc pl-5 space-y-1">
-                <li>Single-input CAST/filter: <code class="text-foreground">transform_sales_order</code>, <code class="text-foreground">transform_sales_line</code>.</li>
+                <li>Single-input CAST/filter: <code class="text-foreground">transform_sales_order</code>, <code class="text-foreground">transform_sales_line</code>. SQL uses <code class="text-foreground">{"{{ input }}"}</code>.</li>
                 <li>Two-input JOIN + GROUP BY: <code class="text-foreground">transform_order_summary</code> with a list of two <code class="text-foreground">from_step</code> rows (the CAST transforms). SQL uses <code class="text-foreground">{"{{ input.sales_order_transformed }}"}</code> and <code class="text-foreground">{"{{ input.sales_line_transformed }}"}</code> — producer output names, not YAML map keys.</li>
             </ul>
             <p>

@@ -87,11 +87,11 @@ Set `QUERIAL_PACKAGE_CLI` to a Package CLI `.csproj` if you want checksum-stable
 Scenarios **B**, **C** (PostgreSQL half), **D** (PostgreSQL branch), and **E** use extension step types:
 
 - Extract: `database-query-to-parquet` with required unique `config.outputName` (e.g. `product`; no file extension)
-- Transform (E): `artifact-sql` with a **list** of `config.inputs[].from_step`, required `outputName`, and DuckDB SQL using `{{ input }}` (one inbound file) or `{{ input.outputName }}` (several). E includes single-input CAST steps **and** a two-input JOIN/GROUP BY (`transform_order_summary`) that sinks `aw.sales_order_summary`.
+- Transform (E): `artifact-sql` with a **list** of `config.inputs[].from_step`, required unique `outputName`, and DuckDB SQL using `{{ input }}` (one inbound file) or `{{ input.outputName }}` (several). CAST steps use the bare token. The join (`transform_order_summary`) uses `{{ input.sales_order_transformed }}` / `{{ input.sales_line_transformed }}` and sinks `aw.sales_order_summary`.
 - Load: `staged-database-sql` with a **list** of `config.stages[].from_step`, column contracts, and `transaction.mode: stage-and-execute`. Stage `type` is **destination provider DDL** (SQL Server `datetime2` / `decimal(19,4)`; PostgreSQL `timestamp` / `numeric(19,4)`). Do not put PostgreSQL `timestamptz` on a SQL Server stage (`timestamp` on SQL Server is `rowversion`, not a datetime).
 - Extract/transform → load dependencies use `artifact_available`
 
-Map-shaped `stages:` / `inputs:` YAML is rejected. Bindings come from canvas `artifact_available` edges.
+Map-shaped `stages:` / `inputs:` YAML is rejected. Bindings come from canvas `artifact_available` edges. Package YAML omits frozen `name`; import materializes it from the producer `outputName` so Scenario E join tokens compile.
 
 Scenario **F** is the other Parquet path: an `external-parquet` structural root (no connection, no SQL) that is seeded from a multipart file at trigger (`parquet.ids`), then `staged-database-sql` into `ingest.ids`. It does not extract AdventureWorks. **Do not schedule** F. Canonical fixture: `fixtures/tiny-ids.parquet`.
 

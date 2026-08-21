@@ -101,11 +101,14 @@ GROUP BY
     CAST(o.order_date AS DATE),
     o.total_due;</code></pre>
             <p>
-                Qualifiers are the producer <code class="text-foreground">outputName</code>
-                values, frozen when the edge is saved — not YAML map keys. Single-input
-                CAST steps use the bare token <code class="text-foreground">{"{{ input }}"}</code>.
+                CAST steps use the bare token <code class="text-foreground">{"{{ input }}"}</code>
+                (not <code class="text-foreground">{"{{ input.sales_order }}"}</code>).
+                The join uses each CAST step’s
+                <code class="text-foreground">outputName</code>.
                 Staged loads bind <code class="text-foreground">from_step: transform_order_summary</code>
                 as a list row and upsert <code class="text-foreground">aw.sales_order_summary</code>.
+                Import fills frozen <code class="text-foreground">name</code> from those
+                output names so the join SQL compiles.
                 <a href="/docs/developer-handler-contracts" class="text-link hover:underline">Handler contracts</a>.
             </p>
 

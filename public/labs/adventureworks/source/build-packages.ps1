@@ -1137,12 +1137,12 @@ All artifact edges use `artifact_available`. Line extract hangs off the order ex
 
 ## DuckDB SQL
 
-- `transform_sales_order` / `transform_sales_line` read `{{ input.sales_order }}` / `{{ input.sales_line }}` (one `from_step` each).
-- `transform_order_summary` joins both transformed artifacts:
+- `transform_sales_order` / `transform_sales_line` each have one inbound file, so SQL uses the bare token `{{ input }}`.
+- `transform_order_summary` joins both CAST artifacts by producer `outputName`:
 
 ```sql
-FROM {{ input.sales_order }} AS o
-INNER JOIN {{ input.sales_line }} AS l
+FROM {{ input.sales_order_transformed }} AS o
+INNER JOIN {{ input.sales_line_transformed }} AS l
     ON o.sales_order_id = l.sales_order_id
 GROUP BY ...
 ```
