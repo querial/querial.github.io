@@ -77,7 +77,7 @@ import LabsLayout from "../../layouts/labs.astro";
             <ul class="list-disc pl-5 space-y-2">
                 <li><code class="text-foreground">-Scenarios A,B,C,D,E,F</code> — subset to build. Default is all six. Comma-separated or multiple args. Unknown letters throw.</li>
                 <li><code class="text-foreground">-Zip</code> — write a zip next to each tree. Prefer this for Workspace import (the modal expects a zip, 64&nbsp;MB max).</li>
-                <li><code class="text-foreground">-Validate</code> — after each tree, run the Package CLI if <code class="text-foreground">QUERIAL_PACKAGE_CLI</code> points at a <code class="text-foreground">.csproj</code>; otherwise a structural check (manifest, catalog names, referenced SQL files exist).</li>
+                <li><code class="text-foreground">-Validate</code> — after each tree, run the Package CLI if <code class="text-foreground">QUERIAL_PACKAGE_CLI</code> points at a <code class="text-foreground">.csproj</code>; otherwise a structural check (manifest, catalog names, referenced SQL files exist). With the CLI, the script builds it <strong class="text-foreground">once</strong>, then uses <code class="text-foreground">dotnet run --no-build</code> per scenario so you are not paying a full restore for A, then B, then C.</li>
                 <li><code class="text-foreground">-Combined</code> — also emit <code class="text-foreground">aw-lab-all</code> with every selected pipeline and a union catalog. Connection name clashes with different providers fail closed.</li>
                 <li><code class="text-foreground">-OutDir</code> — override the packages folder (relative to the script, or absolute).</li>
             </ul>
@@ -102,12 +102,12 @@ import LabsLayout from "../../layouts/labs.astro";
             <h2>Zips: Package CLI vs Compress-Archive</h2>
             <p>
                 If you set <code class="text-foreground">$env:QUERIAL_PACKAGE_CLI</code> to
-                the Package CLI project file, <code class="text-foreground">-Zip</code> calls
-                <code class="text-foreground">dotnet run --project … -- pack &lt;tree&gt; &lt;zip&gt;</code>
-                and <code class="text-foreground">-Validate</code> calls
-                <code class="text-foreground">validate</code>. That path is checksum-stable
-                and matches what Querial’s import validator expects. Format, tree, and
-                import rules:
+                the Package CLI project file, the script runs
+                <code class="text-foreground">dotnet build</code> once, then
+                <code class="text-foreground">dotnet run --project … --no-build -- pack|validate …</code>
+                for each tree. That path is checksum-stable and matches what Querial’s
+                import validator expects. The first build can take a minute; later
+                scenarios should be quick. Format, tree, and import rules:
                 <a href="/docs/developer-packages" class="text-link hover:underline">Packages</a>.
             </p>
             <p>

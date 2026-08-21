@@ -57,9 +57,9 @@ Each package is `querial.package/v1` and includes:
 
 `-Combined` still builds the per-scenario packages for the selected set, then emits one extra package `aw-lab-all` with all selected pipelines and a **union** connection catalog. Use `-Scenarios` to control which scenarios are merged (default A,B,C,D,E,F).
 
-`build-packages.ps1` is idempotent and overwrites `packages/scenario-*` / `packages/aw-lab-all` outputs on rerun.
+When `QUERIAL_PACKAGE_CLI` is set, `-Validate` / `-Zip` **build the Package CLI once**, then invoke it with `--no-build` for each scenario. The first build can take a minute; later scenarios should be quick. Without that variable, `-Zip` uses `Compress-Archive` and `-Validate` is a structural check.
 
-Set `QUERIAL_PACKAGE_CLI` to a Package CLI `.csproj` if you want checksum-stable `pack` / `validate`. Without it, `-Zip` uses `Compress-Archive` and `-Validate` is a structural check.
+`build-packages.ps1` is idempotent and overwrites `packages/scenario-*` / `packages/aw-lab-all` outputs on rerun.
 
 ## Scenario map
 

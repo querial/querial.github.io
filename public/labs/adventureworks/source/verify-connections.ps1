@@ -94,4 +94,4 @@ if ($failed -gt 0) {
     exit 1
 }
 
-Write-Host "`nAll checks passed. Next: lab/adventureworks/README.md" -ForegroundColor Green
+Write-Host "`nAll checks passed. Next: README.md" -ForegroundColor Green

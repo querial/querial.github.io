@@ -13,6 +13,7 @@ $ErrorActionPreference = "Stop"
 function Write-Info {
     param([string]$Message)
     Write-Host "[build-packages] $Message"
+    try { [Console]::Out.Flush() } catch { }
 }
 
 function Normalize-ScenarioSelection {
@@ -54,6 +55,7 @@ function New-CleanDirectory {
     param([string]$Path)
 
     if (Test-Path -LiteralPath $Path) {
+        Write-Info "Removing existing output: $Path"
         Remove-Item -LiteralPath $Path -Recurse -Force
     }
 
@@ -156,6 +158,10 @@ function Get-YamlMappingEntries {
     }
 
     foreach ($property in @($Value.PSObject.Properties)) {
+        if ($property.MemberType -ne "NoteProperty") {
+            continue
+        }
+
         $entries.Add([pscustomobject]@{ Name = [string]$property.Name; Value = $property.Value })
     }
 
@@ -184,8 +190,13 @@ function Format-YamlScalar {
 function Format-YamlNode {
     param(
         [AllowNull()]$Value,
-        [int]$Indent = 0
+        [int]$Indent = 0,
+        [int]$Depth = 0
     )
+
+    if ($Depth -gt 40) {
+        throw "YAML serialization exceeded max depth (possible object cycle)."
+    }
 
     $prefix = " " * $Indent
     $lines = [System.Collections.Generic.List[string]]::new()
@@ -219,10 +230,18 @@ function Format-YamlNode {
                         }
                     }
                 }
+                elseif ($entry.Name -eq "columns") {
+                    foreach ($mapEntry in @(Get-YamlMappingEntries -Value $child)) {
+                        if ($mapEntry.Name -eq "source") {
+                            $unwrapBinding = $true
+                            break
+                        }
+                    }
+                }
 
                 if (-not $unwrapBinding) {
                     $lines.Add("$prefix$($entry.Name):")
-                    $lines.Add((Format-YamlNode -Value $child -Indent ($Indent + 2)))
+                    $lines.Add((Format-YamlNode -Value $child -Indent ($Indent + 2) -Depth ($Depth + 1)))
                     continue
                 }
 
@@ -250,7 +269,7 @@ function Format-YamlNode {
                         if (Test-YamlMapping -Value $firstChild.Value -or (
                                 $firstChild.Value -is [System.Collections.IEnumerable] -and $firstChild.Value -isnot [string])) {
                             $lines.Add("$prefix  -")
-                            $lines.Add((Format-YamlNode -Value $childItem -Indent ($Indent + 4)))
+                            $lines.Add((Format-YamlNode -Value $childItem -Indent ($Indent + 4) -Depth ($Depth + 1)))
                         }
                         else {
                             $lines.Add("$prefix  - $($firstChild.Name): $(Format-YamlScalar -Value $firstChild.Value)")
@@ -258,11 +277,11 @@ function Format-YamlNode {
                                 $rest = $childEntries[$i]
                                 if (Test-YamlMapping -Value $rest.Value) {
                                     $lines.Add("$prefix    $($rest.Name):")
-                                    $lines.Add((Format-YamlNode -Value $rest.Value -Indent ($Indent + 6)))
+                                    $lines.Add((Format-YamlNode -Value $rest.Value -Indent ($Indent + 6) -Depth ($Depth + 1)))
                                 }
                                 elseif ($rest.Value -is [System.Collections.IEnumerable] -and $rest.Value -isnot [string]) {
                                     $lines.Add("$prefix    $($rest.Name):")
-                                    $lines.Add((Format-YamlNode -Value $rest.Value -Indent ($Indent + 6)))
+                                    $lines.Add((Format-YamlNode -Value $rest.Value -Indent ($Indent + 6) -Depth ($Depth + 1)))
                                 }
                                 else {
                                     $lines.Add("$prefix    $($rest.Name): $(Format-YamlScalar -Value $rest.Value)")
@@ -303,7 +322,7 @@ function Format-YamlNode {
                 if (Test-YamlMapping -Value $first.Value -or (
                         $first.Value -is [System.Collections.IEnumerable] -and $first.Value -isnot [string])) {
                     $lines.Add("$prefix-")
-                    $lines.Add((Format-YamlNode -Value $item -Indent ($Indent + 2)))
+                    $lines.Add((Format-YamlNode -Value $item -Indent ($Indent + 2) -Depth ($Depth + 1)))
                 }
                 else {
                     $lines.Add("$prefix- $($first.Name): $(Format-YamlScalar -Value $first.Value)")
@@ -311,11 +330,11 @@ function Format-YamlNode {
                         $rest = $itemEntries[$i]
                         if (Test-YamlMapping -Value $rest.Value) {
                             $lines.Add("$prefix  $($rest.Name):")
-                            $lines.Add((Format-YamlNode -Value $rest.Value -Indent ($Indent + 4)))
+                            $lines.Add((Format-YamlNode -Value $rest.Value -Indent ($Indent + 4) -Depth ($Depth + 1)))
                         }
                         elseif ($rest.Value -is [System.Collections.IEnumerable] -and $rest.Value -isnot [string]) {
                             $lines.Add("$prefix  $($rest.Name):")
-                            $lines.Add((Format-YamlNode -Value $rest.Value -Indent ($Indent + 4)))
+                            $lines.Add((Format-YamlNode -Value $rest.Value -Indent ($Indent + 4) -Depth ($Depth + 1)))
                         }
                         else {
                             $lines.Add("$prefix  $($rest.Name): $(Format-YamlScalar -Value $rest.Value)")
@@ -375,7 +394,7 @@ function Build-YamlList {
         return "[]"
     }
 
-    return (Format-YamlNode -Value $Items -Indent 0)
+    return (Format-YamlNode -Value $Items -Indent 0 -Depth 0)
 }
 
 function Indent-Block {
@@ -496,6 +515,50 @@ function Write-PipelineYaml {
     Write-Utf8File -Path (Join-Path $PipelineDir "pipeline.yaml") -Content ($lines -join [Environment]::NewLine)
 }
 
+function Ensure-PackageCliBuilt {
+    param([string]$PackageCliProject)
+
+    if ($script:packageCliBuilt) {
+        return
+    }
+
+    Write-Info "Building PackageCli once (used for -Validate / -Zip). First build can take a minute..."
+    $previousEap = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        & dotnet build $PackageCliProject -nologo -v q
+        if ($LASTEXITCODE -ne 0) {
+            throw "PackageCli build failed."
+        }
+    }
+    finally {
+        $ErrorActionPreference = $previousEap
+    }
+
+    $script:packageCliBuilt = $true
+}
+
+function Invoke-PackageCliCommand {
+    param(
+        [string]$PackageCliProject,
+        [string[]]$CliArgs
+    )
+
+    Ensure-PackageCliBuilt -PackageCliProject $PackageCliProject
+    Write-Info "PackageCli $($CliArgs -join ' ')"
+    $previousEap = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        & dotnet run --project $PackageCliProject --no-build -- @CliArgs
+        if ($LASTEXITCODE -ne 0) {
+            throw "PackageCli failed ($($CliArgs[0])). Exit code $LASTEXITCODE."
+        }
+    }
+    finally {
+        $ErrorActionPreference = $previousEap
+    }
+}
+
 function Invoke-StructuralValidation {
     param([string]$PackageDir)
 
@@ -566,20 +629,7 @@ function Invoke-PackageValidation {
     )
 
     if ($PackageCliAvailable) {
-        Write-Info "Validating with PackageCli: $PackageDir"
-        $args = @(
-            "run"
-            "--project"
-            $PackageCliProject
-            "--"
-            "validate"
-            $PackageDir
-        )
-
-        & dotnet @args
-        if ($LASTEXITCODE -ne 0) {
-            throw "PackageCli validation failed for $PackageDir."
-        }
+        Invoke-PackageCliCommand -PackageCliProject $PackageCliProject -CliArgs @("validate", $PackageDir)
     }
     else {
         Write-Info "PackageCli not found. Running structural validation: $PackageDir"
@@ -596,21 +646,7 @@ function Invoke-PackageZip {
     )
 
     if ($PackageCliAvailable) {
-        Write-Info "Packing deterministic zip with PackageCli: $ZipPath"
-        $args = @(
-            "run"
-            "--project"
-            $PackageCliProject
-            "--"
-            "pack"
-            $PackageDir
-            $ZipPath
-        )
-
-        & dotnet @args
-        if ($LASTEXITCODE -ne 0) {
-            throw "PackageCli pack failed for $PackageDir."
-        }
+        Invoke-PackageCliCommand -PackageCliProject $PackageCliProject -CliArgs @("pack", $PackageDir, $ZipPath)
         return
     }
 
@@ -638,6 +674,7 @@ else {
 
 $packageCliProject = $env:QUERIAL_PACKAGE_CLI
 $packageCliAvailable = -not [string]::IsNullOrWhiteSpace($packageCliProject) -and (Test-Path -LiteralPath $packageCliProject -PathType Leaf)
+$script:packageCliBuilt = $false
 
 $scenarioDefinitions = @{
     "A" = @{
@@ -1496,17 +1533,17 @@ This scenario does not read AdventureWorks. It uses the same `aw-pg-dest` wareho
 
 Multipart field name: `parquet.ids`
 
-Canonical file: `lab/adventureworks/fixtures/tiny-ids.parquet` (same generated three-row `id` file as the Trigger Demo). Copied into the package as `fixtures/tiny-ids.parquet`.
+Canonical file: `fixtures/tiny-ids.parquet` (three-row `id` file). Copied into the package as `fixtures/tiny-ids.parquet`.
 
 ## Connections
 
-- `aw-pg-dest` - PostgreSQL destination. Bind to Aspire **target-pg** database `querial_test` (host `127.0.0.1`, port `15434`). Stub only in the package; no secrets.
+- `aw-pg-dest` - PostgreSQL destination warehouse. Stub only in the package; no secrets.
 
 ## Parameters
 
 | Code | Type | Required | Notes |
 |------|------|----------|--------|
-| `batch_label` | string | yes | Default `lab`. Sent on JSON or multipart `parameters`. The sink table does not store it; it exists so Run now / Trigger Demo show a typed field next to the file. |
+| `batch_label` | string | yes | Default `lab`. Sent on JSON or multipart `parameters`. The sink table does not store it; it exists so Run now shows a typed field next to the file. |
 
 ## Steps
 
