@@ -362,15 +362,13 @@ config:
             <p>
                 Mixing root and <code class="text-foreground">packages/*</code> in the
                 same repo is rejected. Core operation never requires a remote. Operators
-                configure remotes (HTTPS username + token stored in Querial — not host
-                REST APIs, not pull-request automation). Modes: disabled, local
-                read/write (host folder, no remote), external read/write, external
-                read-only, central-managed client. Agents do not need Git. Publication
-                must not become a secret dump.
+                configure remotes, Sync, publish-to-Git, and activate —
+                <a href="/docs/devops-git" class="text-link hover:underline">Git and package remotes</a>.
+                Agents do not need Git. Publication must not become a secret dump.
             </p>
             <p>
                 Operators own clone/fetch/commit paths. See
-                <a href="/docs/devops-agents" class="text-link hover:underline">Agents, API keys, and Git</a>.
+                <a href="/docs/devops-git" class="text-link hover:underline">Git and package remotes</a>.
             </p>
 
             <h2>Validate, pack, unpack</h2>

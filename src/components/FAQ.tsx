@@ -50,7 +50,7 @@ const faqs = [
   {
     question: "Is Git required?",
     answer:
-      "No. Packages can live in Git, and optional remotes can publish diffs, but core operation never requires a remote. Messaging is also optional and never carries large tabular payloads.",
+      "No. Packages can live in Git, and optional remotes can commit and fetch trees, but core operation never requires a remote. Pipeline Publish in Workspace is separate from publish-to-Git. Messaging is also optional and never carries large tabular payloads. See Git and package remotes in the docs.",
   },
   {
     question: "Can a pipeline start from a Parquet file I already have?",

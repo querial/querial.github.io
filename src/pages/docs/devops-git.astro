@@ -1,0 +1,310 @@
+---
+import DocsLayout from "../../layouts/docs.astro";
+---
+
+<DocsLayout title="Git and package remotes — Querial">
+    <div class="space-y-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-querial-sky">For DevOps</p>
+            <h1 class="text-3xl md:text-4xl font-bold mt-1">Git and package remotes</h1>
+            <p class="mt-3 text-muted-foreground max-w-3xl">
+                Git is an optional distribution and collaboration channel for
+                <code class="text-foreground">querial.package/v1</code> trees. It is not
+                the control plane, not the scheduler, and not required to design, publish,
+                deploy, or run a pipeline.
+            </p>
+        </div>
+        <div class="prose dark:prose-invert max-w-none space-y-6 [&>p]:text-muted-foreground [&>h2]:text-foreground [&>h3]:text-foreground">
+            <h2>What Git is for</h2>
+            <p>
+                A Git repository row in a project points at a host working directory
+                (and optionally an HTTPS remote). Querial can clone, fetch, commit a
+                normalized package tree, optionally push, compare two stored revisions,
+                and activate a revision into the <strong class="text-foreground">current
+                project as drafts</strong>. You still publish immutable pipeline versions
+                in Workspace. Git never executes SQL. Agents never need a remote.
+            </p>
+            <p>
+                Control-database authority stays with Querial: deployments, encrypted
+                endpoints, users, agents, schedules, runs, and API keys never belong in
+                Git. Promotion copies the same pipeline version (and, when present, the
+                recorded Git commit and package checksum) to another environment kind —
+                it does not re-enter secrets.
+            </p>
+
+            <h2>Two different “publishes”</h2>
+            <div class="overflow-x-auto not-prose">
+                <table class="w-full text-sm">
+                    <thead><tr class="border-b border-border text-left"><th class="py-2 pr-4">Action</th><th class="py-2">What it freezes</th></tr></thead>
+                    <tbody class="text-muted-foreground">
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 text-foreground">Pipeline Publish (Workspace)</td><td class="py-2">Immutable DAG in the control database. Required to deploy and run. Independent of Git.</td></tr>
+                        <tr><td class="py-2 pr-4 text-foreground">Publish to Git</td><td class="py-2">Export the package tree, secret-scan, commit (write modes), optional push. Records commit hash + tree SHA-256. Explicit operator/API action — not automatic on pipeline publish.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2>Feature flag</h2>
+            <p>
+                All Git screens and APIs are gated by
+                <code class="text-foreground">Querial:Extensions:GitIntegration</code>
+                (environment form <code class="text-foreground">Querial__Extensions__GitIntegration</code>).
+                Stock defaults are off. Local AppHost turns the flag on; it still does
+                <em>not</em> invent a working directory. With the flag off, Git
+                Repositories shows a disabled message, list APIs return empty, and
+                mutating Git calls fail closed with a clear error. Draft → publish →
+                deploy → run is unchanged.
+            </p>
+
+            <h2>Who configures it</h2>
+            <p>
+                Git Repositories is a Workspace screen under Design, shown when this
+                role has CanOperate. Developers do not see it. The API is
+                <code class="text-foreground">/api/git-repositories</code> under the same
+                project-operator policy. Rows are <strong class="text-foreground">project-scoped</strong>:
+                names are unique per project. There is no instance-wide “Git root.”
+            </p>
+
+            <h2>Repository modes</h2>
+            <p>
+                Each row has a mode. Disabled means the row exists but Sync/publish
+                refuse work.
+            </p>
+            <div class="overflow-x-auto not-prose">
+                <table class="w-full text-sm">
+                    <thead><tr class="border-b border-border text-left"><th class="py-2 pr-4">Mode</th><th class="py-2 pr-4">Remote</th><th class="py-2 pr-4">Working tree</th><th class="py-2">Push</th></tr></thead>
+                    <tbody class="text-muted-foreground">
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 text-foreground">disabled</td><td class="py-2 pr-4">—</td><td class="py-2 pr-4">—</td><td class="py-2">—</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 text-foreground">local_rw</td><td class="py-2 pr-4">optional</td><td class="py-2 pr-4">Local path required. Init if missing.</td><td class="py-2">Never</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 text-foreground">external_rw</td><td class="py-2 pr-4">HTTPS URL required</td><td class="py-2 pr-4">Local path or Base path</td><td class="py-2">Optional on publish-to-Git</td></tr>
+                        <tr class="border-b border-border/50"><td class="py-2 pr-4 text-foreground">external_ro</td><td class="py-2 pr-4">HTTPS URL required</td><td class="py-2 pr-4">Local path or Base path</td><td class="py-2">Never</td></tr>
+                        <tr><td class="py-2 pr-4 text-foreground">central_client</td><td class="py-2 pr-4">HTTPS URL required</td><td class="py-2 pr-4">Local path or Base path</td><td class="py-2">Never (fetch/activate only)</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>
+                Fetch-only modes log that the remote will not be written. Treat any
+                push ability on those modes as a misconfiguration.
+            </p>
+            <p>
+                <code class="text-foreground">central_client</code> still uses the
+                ordinary Sync path (clone/fetch + validate). A dedicated “import every
+                central revision” endpoint exists on the API and currently returns
+                <strong class="text-foreground">501</strong> — it is fail-closed, not a
+                silent success. Activate a fetched tree the same way as
+                <code class="text-foreground">external_ro</code>.
+            </p>
+
+            <h2>Working directory</h2>
+            <p>
+                Resolved per row:
+            </p>
+            <ol class="list-decimal pl-5 space-y-1">
+                <li>If <strong class="text-foreground">Local path</strong> is set → that absolute directory (preferred).</li>
+                <li>Else if <strong class="text-foreground">Base path</strong> is set → <code class="text-foreground">{"{BasePath}/{sanitized-name}"}</code>.</li>
+                <li>Else → configuration error; no tree can be materialized.</li>
+            </ol>
+            <p>
+                Name sanitization keeps letters, digits, <code class="text-foreground">.</code>,
+                <code class="text-foreground">_</code>, <code class="text-foreground">-</code>.
+                Other characters become hyphens. <code class="text-foreground">local_rw</code>
+                requires Local path. Fetch modes require a remote URL. Branch defaults
+                to <code class="text-foreground">main</code> when blank on sync.
+            </p>
+            <p>
+                The Web/API process identity must be able to create and write that
+                path. Querial does not mount a volume for you. Prefer a durable host
+                folder (for local AppHost, a repo-relative <code class="text-foreground">.local/git/…</code>
+                is a common choice — not the artifact temp directory).
+            </p>
+
+            <h2>Transport</h2>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Embedded Git library (libgit2 bindings). No system <code class="text-foreground">git</code> install for v1 HTTPS and local modes.</li>
+                <li>Any standard Git host over the Git protocol. Querial does not call host REST APIs and does not automate pull requests or merge requests.</li>
+                <li>Auth is HTTPS username + password/token. Username is taken from the URL userinfo when present, otherwise <code class="text-foreground">git</code>. The token is AES-GCM encrypted at rest (same protector as other secrets) with AAD <code class="text-foreground">git_repo:{"{id}"}:remote_auth</code>. Never written into package files or logs (URLs with userinfo are masked).</li>
+                <li>SSH agent / corporate SSH is out of scope for v1.</li>
+                <li>Clone checks out the configured branch. Subsequent Sync on an existing working copy <strong class="text-foreground">fetches</strong> <code class="text-foreground">origin/{"{branch}"}</code> (prune, tags). It does not merge or reset the working tree by itself.</li>
+                <li>Commit stages all tracked changes. If the tree is clean, the current HEAD SHA is returned (no empty commit). Push is only for <code class="text-foreground">external_rw</code> when requested.</li>
+            </ul>
+
+            <h2>Package layouts in the working tree</h2>
+            <p>
+                Detected from files on disk. Mixing layouts in one working directory is
+                <strong class="text-foreground">ambiguous</strong> and rejected.
+            </p>
+            <h3>Package-root</h3>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>LocalPath/
+  querial.package.yaml
+  connections/catalog.yaml
+  pipelines/
+    &lt;pipeline.code&gt;/
+      pipeline.yaml
+      …</code></pre>
+            <p>
+                The working directory <em>is</em> the package. Existing package-root
+                remotes keep this layout: publish-to-Git replaces the tree at the root
+                (never deletes <code class="text-foreground">.git</code>).
+            </p>
+            <h3>Workspace</h3>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>LocalPath/
+  packages/
+    aw-scenario-a/
+      querial.package.yaml
+      …
+    aw-scenario-b/
+      querial.package.yaml
+      …</code></pre>
+            <p>
+                One Git repo, many packages. Publish writes only
+                <code class="text-foreground">packages/&lt;package.code&gt;/</code> and
+                leaves siblings alone. Sync validates every
+                <code class="text-foreground">packages/*/querial.package.yaml</code>.
+                Activate resolves by stored package code (or the sole package if there
+                is exactly one). Folder names cannot contain
+                <code class="text-foreground">..</code>, slashes, or backslashes.
+            </p>
+            <h3>Empty</h3>
+            <p>
+                No manifests yet. Sync succeeds with a warning. The first publish-to-Git
+                creates <code class="text-foreground">packages/&lt;package.code&gt;/</code>
+                (workspace), not a root manifest — unless you already placed a
+                package-root tree.
+            </p>
+            <p>
+                Zip import/export remains <strong class="text-foreground">one package
+                root per archive</strong>. A zip is a snapshot of a tree; Git is the
+                living copy of that tree. Author against the directory, not the zip
+                bytes. Tree shape:
+                <a href="/docs/developer-packages" class="text-link hover:underline">Packages</a>.
+            </p>
+
+            <h2>Sync</h2>
+            <p>
+                Workspace: Sync now on repository details. API:
+                <code class="text-foreground">POST /api/git-repositories/{"{id}"}/sync</code>.
+            </p>
+            <ul class="list-disc pl-5 space-y-1">
+                <li><code class="text-foreground">local_rw</code> — create the directory, init if needed, validate the package layout, report HEAD.</li>
+                <li>Fetch modes — clone if the path is not a repo; otherwise fetch the branch. Then validate the layout. Fetch-only messages state the remote was not modified. Write-mode Sync still does not push.</li>
+                <li>History rows record fetch vs checkout, branch, status, actor, timestamps.</li>
+            </ul>
+            <p>
+                Invalid trees fail Sync (ambiguous mix, schema errors). Empty trees are
+                allowed until the first publish-to-Git.
+            </p>
+
+            <h2>Publish to Git</h2>
+            <p>
+                API: <code class="text-foreground">POST /api/git-repositories/publish</code>
+                with a pipeline id, version number, optional repository id, package
+                code/name, commit message, and <code class="text-foreground">pushToRemote</code>
+                (default true; ignored unless <code class="text-foreground">external_rw</code>).
+            </p>
+            <ol class="list-decimal pl-5 space-y-1">
+                <li>Export the pipeline(s) as a package zip and unpack to a temp workspace.</li>
+                <li>Validate the tree (same rules as Package CLI / zip import).</li>
+                <li>Secret-scan the export. Known secret field names and connection-string heuristics fail closed.</li>
+                <li>Compute tree SHA-256.</li>
+                <li>Ensure the working repo (clone or init; fetch on existing <code class="text-foreground">external_rw</code>).</li>
+                <li>Copy into the publish destination (wipe destination except <code class="text-foreground">.git</code>).</li>
+                <li>Scan again on the destination. Commit. Optional push.</li>
+                <li>Insert a package-version row: commit hash, checksum, branch/tag, previous active id. The new row is <em>not</em> active until you activate.</li>
+            </ol>
+            <p>
+                Without a repository id, the API can still record a version from supplied
+                package content after a secret scan — useful for tests; it is not a Git
+                commit.
+            </p>
+
+            <h2>Activate</h2>
+            <p>
+                Takes a stored package version and imports the matching on-disk tree
+                into the current project as <strong class="text-foreground">drafts</strong>.
+                Workspace UI: repository details, with the same connection and
+                schema-source resolution wizard as zip import (use existing / create /
+                remap). API:
+                <code class="text-foreground">POST /api/git-repositories/versions/{"{id}"}/activate</code>.
+            </p>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Working directory must exist and contain <code class="text-foreground">querial.package.yaml</code> at the resolved package path.</li>
+                <li>On-disk tree SHA-256 must equal the stored checksum. If it does not, Sync or check out the recorded commit first — activate will not silently import a dirty or drifted tree.</li>
+                <li>Workspace remotes with several packages need the stored package code.</li>
+                <li>Unresolved connections or schema sources return a session (Web JSON / API 422) instead of writing drafts.</li>
+                <li>On success, the previous active package version is deactivated. Pipeline Publish in Workspace remains a separate gate.</li>
+            </ul>
+
+            <h2>Rollback</h2>
+            <p>
+                Restores the previous immutable <em>package-version</em> pointer
+                (<code class="text-foreground">previous_version_id</code>), not a Git
+                <code class="text-foreground">reset --hard</code>. API:
+                <code class="text-foreground">POST /api/git-repositories/pipelines/{"{id}"}/rollback</code>.
+                Fails if there is no active version or no previous record. Audit stores
+                from/to version numbers and checksum.
+            </p>
+
+            <h2>Diff</h2>
+            <p>
+                <code class="text-foreground">GET /api/git-repositories/diff?versionA=&amp;versionB=</code>.
+                Modes, in order:
+            </p>
+            <ol class="list-decimal pl-5 space-y-1">
+                <li><code class="text-foreground">checksum</code> — identical tree hashes → no entries.</li>
+                <li><code class="text-foreground">git-tree</code> — both versions have commit SHAs in the same repository and those commits exist in the working clone. File-level added/removed/modified/renamed plus a truncated unified patch (cap 65,536 characters).</li>
+                <li><code class="text-foreground">metadata</code> — fallback JSON compare of stored package content when the working tree or hashes are missing.</li>
+            </ol>
+            <p>
+                If diffs fall back to metadata, re-sync or publish through Git so both
+                commits exist locally.
+            </p>
+
+            <h2>Secrets</h2>
+            <p>
+                Packages must not contain passwords, tokens, API keys, ciphertext,
+                connection strings, or similarly named fields. The scanner runs on
+                export, again immediately before commit, and on zip import. SQL and
+                markdown skip the connection-string heuristic (so a comment that
+                mentions <code class="text-foreground">Password</code> is less likely
+                to false-positive) but YAML keys named like secrets still fail.
+                Credentials for remotes live only in the encrypted credential store.
+            </p>
+
+            <h2>Audit and status</h2>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Repository status: unknown, ok, syncing, error, disconnected.</li>
+                <li>Sync history on the details page and <code class="text-foreground">GET …/sync-history</code>.</li>
+                <li>Publication audit: commit, activate, rollback — <code class="text-foreground">GET …/{"{id}"}/audit</code>.</li>
+            </ul>
+
+            <h2>API surface (session, current project)</h2>
+            <pre class="rounded-xl border border-border/50 bg-muted/40 p-4 text-sm overflow-x-auto"><code>{`GET    /api/git-repositories
+POST   /api/git-repositories
+PUT    /api/git-repositories/{id}
+DELETE /api/git-repositories/{id}
+GET    /api/git-repositories/{id}/status
+POST   /api/git-repositories/{id}/sync
+GET    /api/git-repositories/{id}/sync-history
+GET    /api/git-repositories/{id}/imports
+GET    /api/git-repositories/{id}/audit
+POST   /api/git-repositories/publish
+POST   /api/git-repositories/versions/{versionId}/activate
+GET    /api/git-repositories/diff?versionA=&versionB=
+GET    /api/git-repositories/pipelines/{pipelineId}/versions
+POST   /api/git-repositories/pipelines/{pipelineId}/rollback
+POST   /api/git-repositories/{id}/central-fetch   → 501 until implemented`}</code></pre>
+            <p>
+                Cookie callers still need CSRF on mutating verbs. API keys are not
+                Platform admin and are not this Git surface.
+            </p>
+
+            <h2>What Git never does</h2>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Replace pipeline Publish, deployments, or runs.</li>
+                <li>Carry connection endpoints, schema-source fetch strings, or API keys.</li>
+                <li>Assign agents or choose pools.</li>
+                <li>Require a remote for air-gapped or single-instance installs.</li>
+                <li>Use SSH in v1, or host-specific pull-request APIs.</li>
+            </ul>
+        </div>
+    </div>
+</DocsLayout>
